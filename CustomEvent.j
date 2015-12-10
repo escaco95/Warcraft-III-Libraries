@@ -21,9 +21,9 @@
   // 사용자 정의 이벤트의 트작ID를 받아옵니다
 */
 
-
 library CustomEvent
     globals
+        private hashtable TH = InitHashtable(  )
         private hashtable H = InitHashtable(  )
         private trigger array T
         private integer CUSTOM_EVENT = 0
@@ -54,14 +54,14 @@ library CustomEvent
             if ev == 0 then
                 call DisplayTextToPlayer( GetLocalPlayer(), 0.00, 0.00, "경고 : 비 커스텀 이벤트 액션 요소를 커스텀 이벤트에서 제거하려고 시도했습니다" )
             endif
-            call TriggerRemoveAction( T[ev], ta )
+            call TriggerRemoveAction( LoadTriggerHandle(TH,0,ev), ta )
             return
         endmethod
         static method addAction takes integer ev, code c returns triggeraction
-            if T[ev] == null then
-                set T[ev] = CreateTrigger()
+            if not HaveSavedHandle( TH, 0, ev ) then
+                call SaveTriggerHandle( TH, 0, ev, CreateTrigger() )
             endif
-            return RegisterAction( TriggerAddAction( T[ev], c ), ev )
+            return RegisterAction( TriggerAddAction( LoadTriggerHandle(TH,0,ev), c ), ev )
         endmethod
         static method evaluate takes integer ev, player p, unit u, item i, integer id returns nothing
             local integer pev = CUSTOM_EVENT
@@ -74,7 +74,7 @@ library CustomEvent
             set CUSTOM_UNIT = u
             set CUSTOM_ITEM = i
             set CUSTOM_ID = id
-            call TriggerExecute( T[ev] )
+            call TriggerExecute( LoadTriggerHandle(TH,0,ev) )
             set CUSTOM_EVENT = pev
             set CUSTOM_PLAYER = pp
             set CUSTOM_UNIT = pu
@@ -86,4 +86,5 @@ library CustomEvent
         endmethod
     endstruct
 endlibrary
+
 
