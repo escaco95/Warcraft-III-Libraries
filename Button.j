@@ -7,15 +7,6 @@
   
   local Button clickedButton = Button.getTrigger()
 */
-  /*
-  버튼으로 사용할 목적의 유닛을 생성/관리할 수 있는 라이브러리입니다.
-  
-  local Button myButton = Button.create( 타입ID, X, Y, 크기 )
-  call myButton.addAction( 함수 )
-  call myButton.destroy()
-  
-  local Button clickedButton = Button.getTrigger()
-*/
   
   library Button
     struct Button
