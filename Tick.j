@@ -61,7 +61,6 @@ library Tick
         endmethod
         static method create takes integer userData returns thistype
             local thistype this = thistype.allocate(  )
-            local integer i = this
             set MAX = MAX + 1
             if .T == null then
                 set .T = CreateTimer(  )
@@ -97,4 +96,49 @@ library Tick
             call thistype.deallocate( this )
         endmethod
     endstruct
+    
+    struct tickUI
+        private static integer MAX = 0
+        private timerdialog T
+        static method operator count takes nothing returns integer
+            return MAX
+        endmethod
+        static method create takes tick t returns thistype
+            local thistype this = thistype.allocate(  )
+            set MAX = MAX + 1
+            set .T = CreateTimerDialog( t.super )
+            return this
+        endmethod
+        method operator super takes nothing returns timerdialog
+            return .T
+        endmethod
+        method operator title= takes string s returns nothing
+            call TimerDialogSetTitle( .T, s )
+        endmethod
+        method operator speed= takes real r returns nothing
+            call TimerDialogSetSpeed( .T, r )
+        endmethod
+        method operator remaining= takes real r returns nothing
+            call TimerDialogSetRealTimeRemaining( .T, r )
+        endmethod
+        method operator visible= takes boolean f returns nothing
+            call TimerDialogDisplay( .T, f )
+        endmethod
+        method operator visible takes nothing returns boolean
+            return IsTimerDialogDisplayed( .T )
+        endmethod
+        method setTimeColor takes integer r, integer g, integer b returns nothing
+            call TimerDialogSetTimeColor( .T, r, g, b, 255 )
+        endmethod
+        method setTitleColor takes integer r, integer g, integer b returns nothing
+            call TimerDialogSetTitleColor( .T, r, g, b, 255 )
+        endmethod
+        method destroy takes nothing returns nothing
+            set MAX = MAX - 1
+            call DestroyTimerDialog( .T )
+            set .T = null
+            call thistype.deallocate( this )
+        endmethod
+    endstruct
 endlibrary
+
