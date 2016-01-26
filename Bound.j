@@ -8,6 +8,8 @@
   플레이어의 카메라 경계를 좌표 기준 너비 높이를 가진 직사각형으로 설정합니다.
   bound.applyRect( 플레이어, 구역 )
   더 이상의 자세한 설명은 생략합니다.
+  bound.reset( 플레이어, 구역 )
+  리셋, 더 이상의 자세한 설명은 생략합니다.
 */
 library Bound
     struct bound extends array
@@ -38,6 +40,9 @@ library Bound
             if GetLocalPlayer() == p or p == null then
                 call SetCameraBounds( minX, minY, minX, maxY, maxX, maxY, maxX, minY )
             endif
+        endmethod
+        static method reset takes player p returns nothing
+            call applyRect( p, bj_mapInitialPlayableArea )
         endmethod
     endstruct
 endlibrary
