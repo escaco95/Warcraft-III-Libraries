@@ -346,4 +346,28 @@ function TextWriteEndVJ takes player p, string f returns nothing
         call PreloadGenEnd(f)
     endif
 endfunction
+//===========================================================
+// 게임 내 시간이 저녁임
+function IsNightVJ takes nothing returns boolean
+    return 6.0 > GetTimeOfDay() or GetTimeOfDay() >= 18.0
+endfunction
+// 게임 내 시간이 아침임
+function IsDayVJ takes nothing returns boolean
+    return 6.0 <= GetTimeOfDay() and GetTimeOfDay() < 18.0
+endfunction
+//===========================================================
+// 확률에 당첨됨
+function IsDiceEqualVJ takes integer min, integer max, integer dest returns boolean
+    return GetRandomInt(min,max) == dest
+endfunction
+function IsDiceLessThanVJ takes integer min, integer max, integer dest returns boolean
+    return GetRandomInt(min,max) < dest
+endfunction
+function IsDiceGreaterThanVJ takes integer min, integer max, integer dest returns boolean
+    return GetRandomInt(min,max) > dest
+endfunction
+function IsRandomMatchedVJ takes real min, real max, real dest returns boolean
+    return GetRandomReal(min,max) < dest
+endfunction
+//===========================================================
 endlibrary
