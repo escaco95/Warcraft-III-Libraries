@@ -349,11 +349,11 @@ endfunction
 //===========================================================
 // 게임 내 시간이 저녁임
 function IsNightVJ takes nothing returns boolean
-    return 6.0 > GetTimeOfDay() or GetTimeOfDay() >= 18.0
+    return 6.0 > GetFloatGameState(GAME_STATE_TIME_OF_DAY) or GetFloatGameState(GAME_STATE_TIME_OF_DAY) >= 18.0
 endfunction
 // 게임 내 시간이 아침임
 function IsDayVJ takes nothing returns boolean
-    return 6.0 <= GetTimeOfDay() and GetTimeOfDay() < 18.0
+    return 6.0 <= GetFloatGameState(GAME_STATE_TIME_OF_DAY) and GetFloatGameState(GAME_STATE_TIME_OF_DAY) < 18.0
 endfunction
 //===========================================================
 // 확률에 당첨됨
