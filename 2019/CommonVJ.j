@@ -1,7 +1,7 @@
 // Copyright (c) 2019 W3UMF https://cafe.naver.com/w3umf
 // Distributed under the BSD License, Version 190510.2320
-// See original source at GitHub https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/Clock.j
-// TESH custom intellisense https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/Clock.Intellisense.txt
+// See original source at GitHub https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.j
+// TESH custom intellisense https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.Intellisense.txt
 /* 
 Contributors
 escaco, 은방
