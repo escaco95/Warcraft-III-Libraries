@@ -1,6 +1,6 @@
 // Copyright (c) 2019 escaco95
 // Distributed under the BSD License, Version 1.0.
-// See original source at github 
+// See original source at github https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/Clock.j
 library Clock
     globals
         private hashtable IN_H = InitHashtable()
