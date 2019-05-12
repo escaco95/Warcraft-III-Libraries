@@ -1,7 +1,7 @@
 // Copyright (c) 2019 escaco95
 // Distributed under the BSD License, Version 1.0.
-// See original source at GitHub 
-// TESH custom intellisense 
+// See original source at GitHub https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/Chart.j
+// TESH custom intellisense https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/Chart.Intellisense.txt
 library Chart
     globals
         private multiboard array IN_B
