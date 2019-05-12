@@ -1,5 +1,5 @@
 // Copyright (c) 2019 W3UMF https://cafe.naver.com/w3umf
-// Distributed under the BSD License, Version 190510.2320
+// Distributed under the BSD License, Version 190512.1606
 // See original source at GitHub https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.j
 // TESH custom intellisense https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.Intellisense.txt
 /* 
@@ -9,19 +9,19 @@ escaco, 은방
 library CommonVJ
 //===========================================================
 // 텍스트 - 모든 플레이어에게 (메시지)를 표시합니다
-function VJDebugMsg takes string s returns nothing
-    call DisplayTextToPlayer(GetLocalPlayer(),0.00,0.00,s)
+function VJDebugMsg takes string message returns nothing
+    call DisplayTextToPlayer(GetLocalPlayer(),0.00,0.00,message)
 endfunction
 // BJ에는 없는 기능 (플레이어)의 화면에 떠 있는 모든 텍스트 지우기
-function ClearTextMessagesVJ takes player p returns nothing
-    if p == GetLocalPlayer() then
+function ClearTextMessagesVJ takes player whichPlayer returns nothing
+    if whichPlayer == GetLocalPlayer() then
         call ClearTextMessages()
     endif
 endfunction
 //===========================================================
 // if GetOwningPlayer(유닛) == 플레이어 then을 if IsUnitOwner(유닛,플레이어) then 으로 압축 가능합니다
-function IsUnitOwnerVJ takes unit u, player p returns boolean
-    return GetOwningPlayer(u)==p
+function IsUnitOwnerVJ takes unit whichUnit, player whichPlayer returns boolean
+    return GetOwningPlayer(whichUnit)==whichPlayer
 endfunction
 // 유닛의 소유자의 플레이어 번호를 바로 가져오는 기능으로, BJ에는 없는 기능입니다
 function GetOwningPlayerIdVJ takes unit u returns integer
@@ -93,112 +93,120 @@ function IsPlayerCreepVJ takes player p returns boolean
 endfunction
 //===========================================================
 // 타이머 다이얼로그를 만들고 제목을 설정하는 것까지 하나의 기능으로 묶었습니다. BJ에는 없습니다
-function CreateTimerDialogVJ takes timer t, string s, player p returns timerdialog
-    set bj_lastCreatedTimerDialog=CreateTimerDialog(t)
-    call TimerDialogSetTitle(bj_lastCreatedTimerDialog,s)
-    call TimerDialogDisplay(bj_lastCreatedTimerDialog,GetLocalPlayer()==p)
+function CreateTimerDialogVJ takes timer whichTimer, string title, player whichPlayer returns timerdialog
+    set bj_lastCreatedTimerDialog=CreateTimerDialog(whichTimer)
+    call TimerDialogSetTitle(bj_lastCreatedTimerDialog,title)
+    call TimerDialogDisplay(bj_lastCreatedTimerDialog,GetLocalPlayer()==whichPlayer)
     return bj_lastCreatedTimerDialog
 endfunction
 //===========================================================
 // 특수효과를 좌표에 만들고, 즉시 번쩍 파괴합니다. BJ에는 없습니다
-function FlashSpecialEffectVJ takes string s, real x, real y returns nothing
-    call DestroyEffect(AddSpecialEffect(s,x,y))
+function FlashSpecialEffectVJ takes string modelName, real x, real y returns nothing
+    call DestroyEffect(AddSpecialEffect(modelName,x,y))
 endfunction
 // 특수효과를 목표물의 위치에 만들고, 즉시 번쩍 파괴합니다. BJ에는 없습니다
-function FlashSpecialEffectTargetPositionVJ takes string s, widget w returns nothing
-    call DestroyEffect(AddSpecialEffect(s,GetWidgetX(w),GetWidgetY(w)))
+function FlashSpecialEffectTargetPositionVJ takes string modelName, widget targetWidget returns nothing
+    call DestroyEffect(AddSpecialEffect(modelName,GetWidgetX(targetWidget),GetWidgetY(targetWidget)))
 endfunction
 // 특수효과를 목표물의 모델에 부착시키고, 즉시 번쩍 파괴합니다. BJ에는 없습니다
-function FlashSpecialEffectTargetVJ takes string s, widget w, string o returns nothing
-    call DestroyEffect(AddSpecialEffectTarget(s,w,o))
+function FlashSpecialEffectTargetVJ takes string modelName, widget targetWidget, string attachPointName returns nothing
+    call DestroyEffect(AddSpecialEffectTarget(modelName,targetWidget,attachPointName))
 endfunction
 //===========================================================
+// N명의 유닛을 생성합니다. 별도의 누수가 발생하지 않습니다.
+function CreateUnitsVJ takes integer amount, player id, integer unitid, real x, real y, real face returns nothing
+    loop
+        exitwhen amount < 1
+        call CreateUnit(id,unitid,x,y,face)
+        set amount = amount - 1
+    endloop
+endfunction
 // 유닛이 사망 상태라면 true, 생존 상태라면 false를 반환합니다. 기존 BJ의 판정 버그를 개선했습니다
-function IsUnitDeadVJ takes unit u returns boolean
-    return IsUnitType(u,UNIT_TYPE_DEAD) or GetUnitTypeId(u) == 0
+function IsUnitDeadVJ takes unit whichUnit returns boolean
+    return IsUnitType(whichUnit,UNIT_TYPE_DEAD) or GetUnitTypeId(whichUnit) == 0
 endfunction
 // 유닛이 사망 상태라면 false, 생존 상태라면 true를 반환합니다. 기존 BJ의 판정 버그를 개선했습니다
-function IsUnitAliveVJ takes unit u returns boolean
-    return not IsUnitType(u,UNIT_TYPE_DEAD) and GetUnitTypeId(u) != 0
+function IsUnitAliveVJ takes unit whichUnit returns boolean
+    return not IsUnitType(whichUnit,UNIT_TYPE_DEAD) and GetUnitTypeId(whichUnit) != 0
 endfunction
 // SetUnitLifeBJ는 있는데, AddUnitLifeBJ는 없습니다. 유닛에게 체력을 추가합니다. 음수를 추가하면 빠집니다
-function AddUnitLifeVJ takes unit u, real a returns nothing
-    call SetUnitState(u,UNIT_STATE_LIFE,GetUnitState(u,UNIT_STATE_LIFE)+a)
+function AddUnitLifeVJ takes unit whichUnit, real deltaLife returns nothing
+    call SetUnitState(whichUnit,UNIT_STATE_LIFE,GetUnitState(whichUnit,UNIT_STATE_LIFE)+deltaLife)
 endfunction
 // SetUnitManaBJ는 있는데, AddUnitManaBJ는 없습니다. 유닛에게 마나을 추가합니다. 음수를 추가하면 빠집니다
-function AddUnitManaVJ takes unit u, real a returns nothing
-    call SetUnitState(u,UNIT_STATE_MANA,GetUnitState(u,UNIT_STATE_MANA)+a)
+function AddUnitManaVJ takes unit whichUnit, real deltaMana returns nothing
+    call SetUnitState(whichUnit,UNIT_STATE_MANA,GetUnitState(whichUnit,UNIT_STATE_MANA)+deltaMana)
 endfunction
 // SetUnitLifeBJ에서 추가적인 RMaxBJ 연산을 제거했습니다
-function SetUnitLifeVJ takes unit u, real a returns nothing
-    call SetUnitState(u,UNIT_STATE_LIFE,a)
+function SetUnitLifeVJ takes unit whichUnit, real life returns nothing
+    call SetUnitState(whichUnit,UNIT_STATE_LIFE,life)
 endfunction
 // SetUnitManaBJ에서 추가적인 RMaxBJ 연산을 제거했습니다
-function SetUnitManaVJ takes unit u, real a returns nothing
-    call SetUnitState(u,UNIT_STATE_MANA,a)
+function SetUnitManaVJ takes unit whichUnit, real mana returns nothing
+    call SetUnitState(whichUnit,UNIT_STATE_MANA,mana)
 endfunction
 // 유닛의 체력값을 받아옵니다. BJ에는 없습니다
-function GetUnitLifeVJ takes unit u returns real
-    return GetUnitState(u,UNIT_STATE_LIFE)
+function GetUnitLifeVJ takes unit whichUnit returns real
+    return GetUnitState(whichUnit,UNIT_STATE_LIFE)
 endfunction
 // 유닛의 마나값을 받아옵니다. BJ에는 없습니다
-function GetUnitManaVJ takes unit u returns real
-    return GetUnitState(u,UNIT_STATE_MANA)
+function GetUnitManaVJ takes unit whichUnit returns real
+    return GetUnitState(whichUnit,UNIT_STATE_MANA)
 endfunction
 // 유닛이 특정 오브젝트 능력을 갖고 있는지의 여부를 알려줍니다. true 갖고있음. false 능력 없음
-function UnitHasAbilityVJ takes unit u, integer i returns boolean
-    return GetUnitAbilityLevel(u,i) > 0
+function UnitHasAbilityVJ takes unit whichUnit, integer abilityId returns boolean
+    return GetUnitAbilityLevel(whichUnit,abilityId) > 0
 endfunction
 // 유닛의 최대 체력값을 받아옵니다. BJ에는 없습니다
-function GetUnitMaxLifeVJ takes unit u returns real
-    return GetUnitState(u,UNIT_STATE_MAX_LIFE)
+function GetUnitMaxLifeVJ takes unit whichUnit returns real
+    return GetUnitState(whichUnit,UNIT_STATE_MAX_LIFE)
 endfunction
 // 유닛의 최대 마나값을 받아옵니다. BJ에는 없습니다
-function GetUnitMaxManaVJ takes unit u returns real
-    return GetUnitState(u,UNIT_STATE_MAX_MANA)
+function GetUnitMaxManaVJ takes unit whichUnit returns real
+    return GetUnitState(whichUnit,UNIT_STATE_MAX_MANA)
 endfunction
 // 유닛의 (속성값)에 수치를 더합니다. BJ에는 없습니다
-function AddUnitStateVJ takes unit u, unitstate s, real d returns nothing
-    call SetUnitState(u,s,GetUnitState(u,s)+d)
+function AddUnitStateVJ takes unit whichUnit, unitstate whichUnitState, real delta returns nothing
+    call SetUnitState(whichUnit,whichUnitState,GetUnitState(whichUnit,whichUnitState)+delta)
 endfunction
 // 유닛의 고도를 변경 가능하게 합니다(지상 유닛도!). BJ에는 없습니다
-function SetUnitFlyVJ takes unit u returns nothing
-    call UnitAddAbility(u,'Amrf')
-    call UnitRemoveAbility(u,'Amrf')
+function SetUnitFlyVJ takes unit whichUnit returns nothing
+    call UnitAddAbility(whichUnit,'Amrf')
+    call UnitRemoveAbility(whichUnit,'Amrf')
 endfunction
 // 유닛의 좌표를 설정합니다
-function SetUnitXYVJ takes unit u, real x, real y returns nothing
-    call SetUnitX(u,x)
-    call SetUnitY(u,y)
+function SetUnitXYVJ takes unit whichUnit, real x, real y returns nothing
+    call SetUnitX(whichUnit,x)
+    call SetUnitY(whichUnit,y)
 endfunction
 // 유닛의 좌표를 지점 좌표로 설정합니다
-function SetUnitXYLocVJ takes unit u, location l returns nothing
-    call SetUnitX(u,GetLocationX(l))
-    call SetUnitY(u,GetLocationY(l))
+function SetUnitXYLocVJ takes unit whichUnit, location targetLoc returns nothing
+    call SetUnitX(whichUnit,GetLocationX(targetLoc))
+    call SetUnitY(whichUnit,GetLocationY(targetLoc))
 endfunction
 // 유닛의 좌표를 (거리) (각도) 만큼 이동합니다
-function PolarUnitVJ takes unit u, real d, real a returns nothing
-    call SetUnitX(u,GetUnitX(u)+d*Cos(a*bj_DEGTORAD))
-    call SetUnitY(u,GetUnitY(u)+d*Sin(a*bj_DEGTORAD))
+function PolarUnitVJ takes unit whichUnit, real distance, real angle returns nothing
+    call SetUnitX(whichUnit,GetUnitX(whichUnit)+distance*Cos(angle*bj_DEGTORAD))
+    call SetUnitY(whichUnit,GetUnitY(whichUnit)+distance*Sin(angle*bj_DEGTORAD))
 endfunction
 // 유닛의 좌표를 (거리) (호도) 만큼 이동합니다
-function PolarUnitRadVJ takes unit u, real d, real a returns nothing
-    call SetUnitX(u,GetUnitX(u)+d*Cos(a))
-    call SetUnitY(u,GetUnitY(u)+d*Sin(a))
+function PolarUnitRadVJ takes unit whichUnit, real distance, real angle returns nothing
+    call SetUnitX(whichUnit,GetUnitX(whichUnit)+distance*Cos(angle))
+    call SetUnitY(whichUnit,GetUnitY(whichUnit)+distance*Sin(angle))
 endfunction
 //===========================================================
 // 구역 내 무작위 X좌표를 가져옵니다. BJ에는 없습니다
-function GetRandomRectXVJ takes rect r returns real
-    return GetRandomReal(GetRectMinX(r),GetRectMaxX(r))
+function GetRandomRectXVJ takes rect whichRect returns real
+    return GetRandomReal(GetRectMinX(whichRect),GetRectMaxX(whichRect))
 endfunction
 // 구역 내 무작위 Y좌표를 가져옵니다. BJ에는 없습니다
-function GetRandomRectYVJ takes rect r returns real
-    return GetRandomReal(GetRectMinY(r),GetRectMaxY(r))
+function GetRandomRectYVJ takes rect whichRect returns real
+    return GetRandomReal(GetRectMinY(whichRect),GetRectMaxY(whichRect))
 endfunction
 //===========================================================
 // 실수의 소수점을 떼고 문자열로 변환합니다. BJ에 없는 기능입니다
-function R2I2S takes real r returns string
-    return I2S(R2I(r))
+function R2I2S takes real value returns string
+    return I2S(R2I(value))
 endfunction
 //===========================================================
 // GUI에 유닛 그룹 파괴를 요청합니다
@@ -206,30 +214,30 @@ function WantDestroyGroupVJ takes nothing returns nothing
     set bj_wantDestroyGroup = true
 endfunction
 // 플레이어의 모든 유닛을 대상으로 (필터 함수)를 실행합니다. BJ에 없는 기능입니다
-function EnumUnitsOfPlayerVJ takes player p, boolexpr f returns nothing
+function EnumUnitsOfPlayerVJ takes player whichPlayer, boolexpr filter returns nothing
     local group g = CreateGroup()
-    call GroupEnumUnitsOfPlayer(g,p,f)
+    call GroupEnumUnitsOfPlayer(g,whichPlayer,filter)
     call DestroyGroup(g)
     set g = null
 endfunction
 // 구역 위의 모든 유닛을 대상으로 (필터 함수)를 실행합니다. BJ에 없는 기능입니다
-function EnumUnitsInRectVJ takes rect r, boolexpr f returns nothing
+function EnumUnitsInRectVJ takes rect whichRect, boolexpr filter returns nothing
     local group g = CreateGroup()
-    call GroupEnumUnitsInRect(g,r,f)
+    call GroupEnumUnitsInRect(g,whichRect,filter)
     call DestroyGroup(g)
     set g = null
 endfunction
 // 좌표를 중심으로 반경 안의 모든 유닛을 대상으로 (필터 함수)를 실행합니다. BJ에 없는 기능입니다
-function EnumUnitsInRangeVJ takes real x, real y, real r, boolexpr f returns nothing
+function EnumUnitsInRangeVJ takes real x, real y, real radius, boolexpr filter returns nothing
     local group g = CreateGroup()
-    call GroupEnumUnitsInRange(g,x,y,r,f)
+    call GroupEnumUnitsInRange(g,x,y,radius,filter)
     call DestroyGroup(g)
     set g = null
 endfunction
-// 위젯(유닛,아이템,장식물)을 중심으로 반경 안의 모든 유닛을 대상으로 (필터 함수)를 실행합니다. 
-function EnumUnitsInWidgetRangeVJ takes widget w, real r, boolexpr f returns nothing
+// 위젯(유닛,아이템,장식물)을 중심으로 반경 안의 모든 유닛을 대상으로 (필터 함수)를 실행합니다. BJ에 없는 기능입니다
+function EnumUnitsInWidgetRangeVJ takes widget whichWidget, real radius, boolexpr filter returns nothing
     local group g = CreateGroup()
-    call GroupEnumUnitsInRange(g,GetWidgetX(w),GetWidgetY(w),r,f)
+    call GroupEnumUnitsInRange(g,GetWidgetX(whichWidget),GetWidgetY(whichWidget),radius,filter)
     call DestroyGroup(g)
     set g = null
 endfunction
@@ -264,86 +272,86 @@ function CreateTextTagForPlayerVJ takes player p, real x, real y, real z, string
 endfunction
 //===========================================================
 // 좌표, 객체 간의 거리,각도를 계산하는 산술 함수입니다. BJ의 누수를 해결
-function DistanceP2PVJ takes real x1, real y1, real x2, real y2 returns real
-    local real dx = x2-x1
-    local real dy = y2-y1
+function DistanceP2PVJ takes real fromX, real fromY, real toX, real toY returns real
+    local real dx = toX-fromX
+    local real dy = toY-fromY
     return SquareRoot(dx*dx+dy*dy)
 endfunction
-function DistanceP2WVJ takes real x1, real y1, widget w2 returns real
-    local real dx = GetWidgetX(w2)-x1
-    local real dy = GetWidgetY(w2)-y1
+function DistanceP2WVJ takes real fromX, real fromY, widget to returns real
+    local real dx = GetWidgetX(to)-fromX
+    local real dy = GetWidgetY(to)-fromY
     return SquareRoot(dx*dx+dy*dy)
 endfunction
-function DistanceW2PVJ takes widget w1, real x2, real y2 returns real
-    local real dx = x2-GetWidgetX(w1)
-    local real dy = y2-GetWidgetY(w1)
+function DistanceW2PVJ takes widget from, real toX, real toY returns real
+    local real dx = toX-GetWidgetX(from)
+    local real dy = toY-GetWidgetY(from)
     return SquareRoot(dx*dx+dy*dy)
 endfunction
-function DistanceW2WVJ takes widget w1, widget w2 returns real
-    local real dx = GetWidgetX(w2)-GetWidgetX(w1)
-    local real dy = GetWidgetY(w2)-GetWidgetY(w1)
+function DistanceW2WVJ takes widget from, widget to returns real
+    local real dx = GetWidgetX(to)-GetWidgetX(from)
+    local real dy = GetWidgetY(to)-GetWidgetY(from)
     return SquareRoot(dx*dx+dy*dy)
 endfunction
-function AngleP2PVJ takes real x1, real y1, real x2, real y2 returns real
-    return Atan2(y2-y1,x2-x1)*bj_RADTODEG
+function AngleP2PVJ takes real fromX, real fromY, real toX, real toY returns real
+    return Atan2(toY-fromY,toX-fromX)*bj_RADTODEG
 endfunction
-function AngleP2PRadVJ takes real x1, real y1, real x2, real y2 returns real
-    return Atan2(y2-y1,x2-x1)
+function AngleP2PRadVJ takes real fromX, real fromY, real toX, real toY returns real
+    return Atan2(toY-fromY,toX-fromX)
 endfunction
-function AngleW2PVJ takes widget w1, real x2, real y2 returns real
-    return Atan2(y2-GetWidgetY(w1),x2-GetWidgetX(w1))*bj_RADTODEG
+function AngleW2PVJ takes widget from, real toX, real toY returns real
+    return Atan2(toY-GetWidgetY(from),toX-GetWidgetX(from))*bj_RADTODEG
 endfunction
-function AngleW2PRadVJ takes widget w1, real x2, real y2 returns real
-    return Atan2(y2-GetWidgetY(w1),x2-GetWidgetX(w1))
+function AngleW2PRadVJ takes widget from, real toX, real toY returns real
+    return Atan2(toY-GetWidgetY(from),toX-GetWidgetX(from))
 endfunction
-function AngleP2WVJ takes real x1, real y1, widget w2 returns real
-    return Atan2(GetWidgetY(w2)-y1,GetWidgetX(w2)-x1)*bj_RADTODEG
+function AngleP2WVJ takes real fromX, real fromY, widget to returns real
+    return Atan2(GetWidgetY(to)-fromY,GetWidgetX(to)-fromX)*bj_RADTODEG
 endfunction
-function AngleP2WRadVJ takes real x1, real y1, widget w2 returns real
-    return Atan2(GetWidgetY(w2)-y1,GetWidgetX(w2)-x1)
+function AngleP2WRadVJ takes real fromX, real fromY, widget to returns real
+    return Atan2(GetWidgetY(to)-fromY,GetWidgetX(to)-fromX)
 endfunction
-function AngleW2WVJ takes widget w1, widget w2 returns real
-    return Atan2(GetWidgetY(w2)-GetWidgetY(w1),GetWidgetX(w2)-GetWidgetX(w1))*bj_RADTODEG
+function AngleW2WVJ takes widget from, widget to returns real
+    return Atan2(GetWidgetY(to)-GetWidgetY(from),GetWidgetX(to)-GetWidgetX(from))*bj_RADTODEG
 endfunction
-function AngleW2WRadVJ takes widget w1, widget w2 returns real
-    return Atan2(GetWidgetY(w2)-GetWidgetY(w1),GetWidgetX(w2)-GetWidgetX(w1))
+function AngleW2WRadVJ takes widget from, widget to returns real
+    return Atan2(GetWidgetY(to)-GetWidgetY(from),GetWidgetX(to)-GetWidgetX(from))
 endfunction
-function PolarXVJ takes real d, real a returns real
-    return d*Cos(a*bj_DEGTORAD)
+function PolarXVJ takes real distance, real angle returns real
+    return distance*Cos(angle*bj_DEGTORAD)
 endfunction
-function PolarYVJ takes real d, real a returns real
-    return d*Sin(a*bj_DEGTORAD)
+function PolarYVJ takes real distance, real angle returns real
+    return distance*Sin(angle*bj_DEGTORAD)
 endfunction
-function PolarXRadVJ takes real d, real a returns real
-    return d*Cos(a)
+function PolarXRadVJ takes real distance, real angle returns real
+    return distance*Cos(angle)
 endfunction
-function PolarYRadVJ takes real d, real a returns real
-    return d*Sin(a)
+function PolarYRadVJ takes real distance, real angle returns real
+    return distance*Sin(angle)
 endfunction
 // 현재 각도가 유도율만큼 목표 각도를 바라보게 만드는 산술 함수입니다
-function MoveAngleToVJ takes real a, real t, real d returns real
-    local real v = ModuloReal(t-a+180,360)
+function MoveAngleToVJ takes real angle, real to, real delta returns real
+    local real v = ModuloReal(to-angle+180,360)
     if v < 0 then
         set v = v + 360
     endif
-    return a + RMaxBJ(-d, RMinBJ(d,-180 + v))
+    return angle + RMaxBJ(-delta, RMinBJ(delta,-180 + v))
 endfunction
 //===========================================================
 // 텍스트 파일 작성 기능입니다. Preload가 있지만, 직관적인 함수명으로 교체
-function TextWriteStartVJ takes player p returns nothing
-    if GetLocalPlayer() == p then
+function TextWriteStartVJ takes player whichPlayer returns nothing
+    if GetLocalPlayer() == whichPlayer then
         call PreloadGenClear()
         call PreloadGenStart()
     endif
 endfunction
-function TextWriteVJ takes player p, string s returns nothing
-    if GetLocalPlayer() == p then
-        call Preload(s)
+function TextWriteVJ takes player whichPlayer, string text returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call Preload(text)
     endif
 endfunction
-function TextWriteEndVJ takes player p, string f returns nothing
-    if GetLocalPlayer() == p then
-        call PreloadGenEnd(f)
+function TextWriteEndVJ takes player whichPlayer, string fileName returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call PreloadGenEnd(fileName)
     endif
 endfunction
 //===========================================================
