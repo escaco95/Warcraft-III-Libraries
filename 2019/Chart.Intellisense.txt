@@ -1,0 +1,559 @@
+// Copyright (c) 2019 escaco95
+// Distributed under the BSD License, Version 1.0.
+// See original source at 
+// TESH custom intellisense 
+// ====[    CHART ITEM    ]====
+function ChartItemGetX takes chartitem whichChartItem returns integer
+    return ModuloInteger(whichChartItem/100,100)
+endfunction
+function ChartItemGetColumns takes chartitem whichChartItem returns integer
+    return ModuloInteger(whichChartItem/100,100)
+endfunction
+function ChartItemGetColumn takes chartitem whichChartItem returns chartcolumn
+    return whichChartItem/10000*10000 + ModuloInteger(whichChartItem/100,100)
+endfunction
+function ChartItemGetY takes chartitem whichChartItem returns integer
+    return ModuloInteger(whichChartItem,100)
+endfunction
+function ChartItemGetRows takes chartitem whichChartItem returns integer
+    return ModuloInteger(whichChartItem,100)
+endfunction
+function ChartItemGetRow takes chartitem whichChartItem returns chartrow
+    return whichChartItem/10000*10000 + ModuloInteger(whichChartItem,100)
+endfunction
+function ChartItemGetChart takes chartitem whichChartItem returns chart
+    return whichChartItem/10000
+endfunction
+function ChartItemClear takes chartitem whichChartItem returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChartItem/10000],ModuloInteger(whichChartItem,100),ModuloInteger(whichChartItem/100,100))
+    call MultiboardSetItemIcon(t,"")
+    call MultiboardSetItemValue(t,"")
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartItemSetIcon takes chartitem whichChartItem, string iconFileName returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChartItem/10000],ModuloInteger(whichChartItem,100),ModuloInteger(whichChartItem/100,100))
+    call MultiboardSetItemIcon(t,iconFileName)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartItemSetValue takes chartitem whichChartItem, string value returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChartItem/10000],ModuloInteger(whichChartItem,100),ModuloInteger(whichChartItem/100,100))
+    call MultiboardSetItemValue(t,value)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartItemSetStyle takes chartitem whichChartItem, boolean showIcon, boolean showValue returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChartItem/10000],ModuloInteger(whichChartItem,100),ModuloInteger(whichChartItem/100,100))
+    call MultiboardSetItemStyle(t,showValue,showIcon)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartItemSetColor takes chartitem whichChartItem, integer red, integer green, integer blue returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChartItem/10000],ModuloInteger(whichChartItem,100),ModuloInteger(whichChartItem/100,100))
+    call MultiboardSetItemValueColor(t,red,green,blue,255)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+// ====[    CHART COLUMN    ]====
+function ChartColumnGetX takes chartcolumn whichChartColumn returns integer
+    return ModuloInteger(whichChartColumn/100,100)
+endfunction
+function ChartColumnGetColumns takes chartcolumn whichChartColumn returns integer
+    return ModuloInteger(whichChartColumn/100,100)
+endfunction
+function ChartColumnGetChart takes chartcolumn whichChartColumn returns chart
+    return whichChartColumn/10000
+endfunction
+function ChartColumnGetItem takes chartcolumn whichChartColumn, integer y returns chartitem
+    return whichChartColumn + y
+endfunction
+function ChartColumnSetItemsIcon takes chartcolumn whichChartColumn, string iconFileName returns nothing
+    local multiboard b = IN_B[whichChartColumn/10000]
+    local integer x = ModuloInteger(whichChartColumn/100,100)
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemIcon(t,iconFileName)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartColumnSetItemsValue takes chartcolumn whichChartColumn, string value returns nothing
+    local multiboard b = IN_B[whichChartColumn/10000]
+    local integer x = ModuloInteger(whichChartColumn/100,100)
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemValue(t,value)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartColumnSetItemsWidth takes chartcolumn whichChartColumn, real width returns nothing
+    local multiboard b = IN_B[whichChartColumn/10000]
+    local integer x = ModuloInteger(whichChartColumn/100,100)
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemWidth(t,width)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartColumnSetItemsStyle takes chartcolumn whichChartColumn, boolean showIcons, boolean showValues returns nothing
+    local multiboard b = IN_B[whichChartColumn/10000]
+    local integer x = ModuloInteger(whichChartColumn/100,100)
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemStyle(t,showValues,showIcons)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartColumnSetItemsColor takes chartcolumn whichChartColumn, integer red, integer green, integer blue returns nothing
+    local multiboard b = IN_B[whichChartColumn/10000]
+    local integer x = ModuloInteger(whichChartColumn/100,100)
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemValueColor(t,red,green,blue,255)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+// ====[    CHART ROW    ]====
+function ChartRowGetY takes chartrow whichChartRow returns integer
+    return ModuloInteger(whichChartRow/100,100)
+endfunction
+function ChartRowGetRows takes chartrow whichChartRow returns integer
+    return ModuloInteger(whichChartRow/100,100)
+endfunction
+function ChartRowGetChart takes chartrow whichChartRow returns chart
+    return whichChartRow/10000
+endfunction
+function ChartRowGetItem takes chartrow whichChartRow, integer x returns chartitem
+    return whichChartRow + x * 100
+endfunction
+function ChartRowSetItemsIcon takes chartrow whichChartRow, string iconFileName returns nothing
+    local multiboard b = IN_B[whichChartRow/10000]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local integer y = ModuloInteger(whichChartRow,100)
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemIcon(t,iconFileName)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartRowSetItemsValue takes chartrow whichChartRow, string value returns nothing
+    local multiboard b = IN_B[whichChartRow/10000]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local integer y = ModuloInteger(whichChartRow,100)
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemValue(t,value)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartRowSetItemsWidth takes chartrow whichChartRow, real width returns nothing
+    local multiboard b = IN_B[whichChartRow/10000]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local integer y = ModuloInteger(whichChartRow,100)
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemWidth(t,width)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartRowSetItemsStyle takes chartrow whichChartRow, boolean showIcons, boolean showValues returns nothing
+    local multiboard b = IN_B[whichChartRow/10000]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local integer y = ModuloInteger(whichChartRow,100)
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemStyle(t,showValues,showIcons)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartRowSetItemsColor takes chartrow whichChartRow, integer red, integer green, integer blue returns nothing
+    local multiboard b = IN_B[whichChartRow/10000]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local integer y = ModuloInteger(whichChartRow,100)
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemValueColor(t,red,green,blue,255)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+// ====[    CHART    ]====
+function CreateChart takes nothing returns chart
+    return chart.create()
+endfunction
+function DestroyChart takes chart whichChart returns nothing
+    call whichChart.destroy()
+endfunction
+function ChartSetSize takes chart whichChart, integer newWidth, integer newHeight returns nothing
+    call MultiboardSetColumnCount(IN_B[whichChart],newWidth)
+    call MultiboardSetRowCount(IN_B[whichChart],newHeight)
+endfunction
+function ChartGetWidth takes chart whichChart returns integer
+    return MultiboardGetColumnCount(IN_B[whichChart])
+endfunction
+function ChartGetColumns takes chart whichChart returns integer
+    return MultiboardGetColumnCount(IN_B[whichChart])
+endfunction
+function ChartSetWidth takes chart whichChart, integer newWidth returns nothing
+    call MultiboardSetColumnCount(IN_B[whichChart],newWidth)
+endfunction
+function ChartSetColumns takes chart whichChart, integer newWidth returns nothing
+    call MultiboardSetColumnCount(IN_B[whichChart],newWidth)
+endfunction
+function ChartGetHeight takes chart whichChart returns integer
+    return MultiboardGetColumnCount(IN_B[whichChart])
+endfunction
+function ChartGetRows takes chart whichChart returns integer
+    return MultiboardGetColumnCount(IN_B[whichChart])
+endfunction
+function ChartSetHeight takes chart whichChart, integer newHeight returns nothing
+    call MultiboardSetRowCount(IN_B[whichChart],newHeight)
+endfunction
+function ChartSetRows takes chart whichChart, integer newHeight returns nothing
+    call MultiboardSetRowCount(IN_B[whichChart],newHeight)
+endfunction
+function ChartGetColumn takes chart whichChart, integer x returns chartcolumn
+    return whichChart * 10000 + x * 100
+endfunction
+function ChartGetRow takes chart whichChart, integer y returns chartrow
+    return whichChart * 10000 + y
+endfunction
+function ChartGetItem takes chart whichChart, integer x, integer y returns chartitem
+    return whichChart * 10000 + x * 100 + y
+endfunction
+function ChartSetItemsIcon takes chart whichChart, string iconPath returns nothing
+    call MultiboardSetItemsIcon(IN_B[whichChart],iconPath)
+endfunction
+function ChartSetItemsValue takes chart whichChart, string value returns nothing
+    call MultiboardSetItemsValue(IN_B[whichChart],value)
+endfunction
+function ChartSetItemsWidth takes chart whichChart, real width returns nothing
+    call MultiboardSetItemsWidth(IN_B[whichChart],width)
+endfunction
+function ChartSetItemsStyle takes chart whichChart, boolean showIcons, boolean showValues returns nothing
+    call MultiboardSetItemsStyle(IN_B[whichChart],showValues,showIcons)
+endfunction
+function ChartSetItemsColor takes chart whichChart, integer red, integer green, integer blue returns nothing
+    call MultiboardSetItemsValueColor(IN_B[whichChart],red,green,blue,255)
+endfunction
+function ChartSetItemIcon takes chart whichChart, integer x, integer y, string iconFileName returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChart],y,x)
+    call MultiboardSetItemIcon(t,iconFileName)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartSetItemValue takes chart whichChart, integer x, integer y, string value returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChart],y,x)
+    call MultiboardSetItemValue(t,value)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartSetItemWidth takes chart whichChart, integer x, integer y, real width returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChart],y,x)
+    call MultiboardSetItemWidth(t,width)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartSetItemStyle takes chart whichChart, integer x, integer y, boolean showIcon, boolean showValue returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChart],y,x)
+    call MultiboardSetItemStyle(t,showValue,showIcon)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartSetItemColor takes chart whichChart, integer x, integer y, integer red, integer green, integer blue returns nothing
+    local multiboarditem t = MultiboardGetItem(IN_B[whichChart],y,x)
+    call MultiboardSetItemValueColor(t,red,green,blue,255)
+    call MultiboardReleaseItem(t)
+    set t = null
+endfunction
+function ChartSetColumnIcon takes chart whichChart, integer x, string iconFileName returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemIcon(t,iconFileName)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetColumnValue takes chart whichChart, integer x, string value returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemValue(t,value)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetColumnWidth takes chart whichChart, integer x, real width returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemWidth(t,width)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetColumnStyle takes chart whichChart, integer x, boolean showIcons, boolean showValues returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemStyle(t,showValues,showIcons)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetColumnColor takes chart whichChart, integer x, integer red, integer green, integer blue returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer y = MultiboardGetRowCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen y < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemValueColor(t,red,green,blue,255)
+        call MultiboardReleaseItem(t)
+        set y = y - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetRowIcon takes chart whichChart, integer y, string iconFileName returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemIcon(t,iconFileName)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetRowValue takes chart whichChart, integer y, string value returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemValue(t,value)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetRowWidth takes chart whichChart, integer y, real width returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemWidth(t,width)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetRowStyle takes chart whichChart, integer y, boolean showIcons, boolean showValues returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemStyle(t,showValues,showIcons)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartSetRowColor takes chart whichChart, integer y, integer red, integer green, integer blue returns nothing
+    local multiboard b = IN_B[whichChart]
+    local integer x = MultiboardGetColumnCount(b) - 1
+    local multiboarditem t
+    loop
+        exitwhen x < 0
+        set t = MultiboardGetItem(b,y,x)
+        call MultiboardSetItemValueColor(t,red,green,blue,255)
+        call MultiboardReleaseItem(t)
+        set x = x - 1
+    endloop
+    set t = null
+    set b = null
+endfunction
+function ChartClear takes chart whichChart returns nothing
+    call MultiboardClear(IN_B[whichChart])
+endfunction
+function ChartSetTitle takes chart whichChart, string title returns nothing
+    call MultiboardSetTitleText(IN_B[whichChart],title)
+endfunction
+function ChartSetTitleForPlayer takes chart whichChart, player whichPlayer, string title returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call MultiboardSetTitleText(IN_B[whichChart],title)
+    endif
+endfunction
+function ChartSetTitleForForce takes chart whichChart, force whichForce, string title returns nothing
+    if IsPlayerInForce(GetLocalPlayer(),whichForce) then
+        call MultiboardSetTitleText(IN_B[whichChart],title)
+    endif
+endfunction
+function ChartSetTitleColor takes chart whichChart, integer red, integer green, integer blue returns nothing
+    call MultiboardSetTitleTextColor(IN_B[whichChart],red,green,blue,255)
+endfunction
+function ChartSetTitleColorForPlayer takes chart whichChart, player whichPlayer, integer red, integer green, integer blue returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call MultiboardSetTitleTextColor(IN_B[whichChart],red,green,blue,255)
+    endif
+endfunction
+function ChartSetTitleColorForForce takes chart whichChart, force whichForce, integer red, integer green, integer blue returns nothing
+    if IsPlayerInForce(GetLocalPlayer(),whichForce) then
+        call MultiboardSetTitleTextColor(IN_B[whichChart],red,green,blue,255)
+    endif
+endfunction
+function ShowChart takes chart whichChart returns nothing
+    call MultiboardDisplay(IN_B[whichChart],true)
+endfunction
+function ShowChartForPlayer takes chart whichChart, player whichPlayer returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call MultiboardDisplay(IN_B[whichChart],true)
+    endif
+endfunction
+function ShowChartForForce takes chart whichChart, force whichForce returns nothing
+    if IsPlayerInForce(GetLocalPlayer(),whichForce) then
+        call MultiboardDisplay(IN_B[whichChart],true)
+    endif
+endfunction
+function HideChart takes chart whichChart returns nothing
+    call MultiboardDisplay(IN_B[whichChart],false)
+endfunction
+function HideChartForPlayer takes chart whichChart, player whichPlayer returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call MultiboardDisplay(IN_B[whichChart],false)
+    endif
+endfunction
+function HideChartForForce takes chart whichChart, force whichForce returns nothing
+    if IsPlayerInForce(GetLocalPlayer(),whichForce) then
+        call MultiboardDisplay(IN_B[whichChart],false)
+    endif
+endfunction
+function ChartDisplay takes chart whichChart, boolean show returns nothing
+    call MultiboardDisplay(IN_B[whichChart],show)
+endfunction
+function ChartDisplayForPlayer takes chart whichChart, player whichPlayer, boolean show returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call MultiboardDisplay(IN_B[whichChart],show)
+    endif
+endfunction
+function ChartDisplayForForce takes chart whichChart, force whichForce, boolean show returns nothing
+    if IsPlayerInForce(GetLocalPlayer(),whichForce) then
+        call MultiboardDisplay(IN_B[whichChart],show)
+    endif
+endfunction
+function ChartSuppressDisplay takes boolean flag returns nothing
+    call MultiboardSuppressDisplay(flag)
+endfunction
+function ChartMaximize takes chart whichChart, boolean maximize returns nothing
+    call MultiboardMinimize(IN_B[whichChart],not maximize)
+endfunction
+function ChartMaximizeForPlayer takes chart whichChart, player whichPlayer, boolean maximize returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call MultiboardMinimize(IN_B[whichChart],not maximize)
+    endif
+endfunction
+function ChartMaximizeForForce takes chart whichChart, force whichForce, boolean maximize returns nothing
+    if IsPlayerInForce(GetLocalPlayer(),whichForce) then
+        call MultiboardMinimize(IN_B[whichChart],not maximize)
+    endif
+endfunction
+function ChartMinimize takes chart whichChart, boolean minimize returns nothing
+    call MultiboardMinimize(IN_B[whichChart],minimize)
+endfunction
+function ChartMinimizeForPlayer takes chart whichChart, player whichPlayer, boolean minimize returns nothing
+    if GetLocalPlayer() == whichPlayer then
+        call MultiboardMinimize(IN_B[whichChart],minimize)
+    endif
+endfunction
+function ChartMinimizeForForce takes chart whichChart, force whichForce, boolean minimize returns nothing
+    if IsPlayerInForce(GetLocalPlayer(),whichForce) then
+        call MultiboardMinimize(IN_B[whichChart],minimize)
+    endif
+endfunction
