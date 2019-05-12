@@ -1,5 +1,5 @@
 // Copyright (c) 2019 W3UMF https://cafe.naver.com/w3umf
-// Distributed under the BSD License, Version 190510.2320
+// Distributed under the BSD License, Version 190512.1606
 // See original source at GitHub https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.j
 // TESH custom intellisense https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.Intellisense.txt
 /* 
@@ -100,18 +100,26 @@ function CreateTimerDialogVJ takes timer whichTimer, string title, player whichP
 endfunction
 //===========================================================
 // 특수효과를 좌표에 만들고, 즉시 번쩍 파괴합니다. BJ에는 없습니다
-function FlashSpecialEffectVJ takes string modelPath, real x, real y returns nothing
-    call DestroyEffect(AddSpecialEffect(modelPath,x,y))
+function FlashSpecialEffectVJ takes string modelName, real x, real y returns nothing
+    call DestroyEffect(AddSpecialEffect(modelName,x,y))
 endfunction
 // 특수효과를 목표물의 위치에 만들고, 즉시 번쩍 파괴합니다. BJ에는 없습니다
-function FlashSpecialEffectTargetPositionVJ takes string modelPath, widget targetWidget returns nothing
-    call DestroyEffect(AddSpecialEffect(modelPath,GetWidgetX(targetWidget),GetWidgetY(targetWidget)))
+function FlashSpecialEffectTargetPositionVJ takes string modelName, widget targetWidget returns nothing
+    call DestroyEffect(AddSpecialEffect(modelName,GetWidgetX(targetWidget),GetWidgetY(targetWidget)))
 endfunction
 // 특수효과를 목표물의 모델에 부착시키고, 즉시 번쩍 파괴합니다. BJ에는 없습니다
-function FlashSpecialEffectTargetVJ takes string modelPath, widget targetWidget, string attachpoint returns nothing
-    call DestroyEffect(AddSpecialEffectTarget(modelPath,targetWidget,attachPoint))
+function FlashSpecialEffectTargetVJ takes string modelName, widget targetWidget, string attachPointName returns nothing
+    call DestroyEffect(AddSpecialEffectTarget(modelName,targetWidget,attachPointName))
 endfunction
 //===========================================================
+// N명의 유닛을 생성합니다. 별도의 누수가 발생하지 않습니다.
+function CreateUnitsVJ takes integer amount, player id, integer unitid, real x, real y, real face returns nothing
+    loop
+        exitwhen amount < 1
+        call CreateUnit(id,unitid,x,y,face)
+        set amount = amount - 1
+    endloop
+endfunction
 // 유닛이 사망 상태라면 true, 생존 상태라면 false를 반환합니다. 기존 BJ의 판정 버그를 개선했습니다
 function IsUnitDeadVJ takes unit whichUnit returns boolean
     return IsUnitType(whichUnit,UNIT_TYPE_DEAD) or GetUnitTypeId(whichUnit) == 0
@@ -368,3 +376,4 @@ endfunction
 function IsRandomMatchedVJ takes real min, real max, real dest returns boolean
     return GetRandomReal(min,max) < dest
 endfunction
+//===========================================================
