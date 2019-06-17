@@ -96,7 +96,7 @@ function TriggerRegisterAnyPlayerEventVJ takes trigger whichTrigger, playerevent
     local integer index
     set index = 0
     loop
-        call TriggerRegisterPlayerEvent(whichTrigger, Player(index), whichEvent, null)
+        call TriggerRegisterPlayerEvent(whichTrigger, Player(index), whichEvent)
         set index = index + 1
         exitwhen index == bj_MAX_PLAYER_SLOTS
     endloop
