@@ -1,5 +1,5 @@
 // Copyright (c) 2019 W3UMF https://cafe.naver.com/w3umf
-// Distributed under the BSD License, Version 190512.2044
+// Distributed under the BSD License, Version 190618.0155
 // See original source at GitHub https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.j
 // TESH custom intellisense https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.Intellisense.txt
 /* 
@@ -90,6 +90,16 @@ endfunction
 // 플레이어가 '적대적 중립'인지 확인하는 기능입니다. BJ에는 없습니다
 function IsPlayerCreepVJ takes player p returns boolean
     return GetPlayerController(p) == MAP_CONTROL_CREEP
+endfunction
+// 어떤 플레이어든 이벤트를 등록합니다.
+function TriggerRegisterAnyPlayerEventVJ takes trigger whichTrigger, playerevent whichEvent returns nothing
+    local integer index
+    set index = 0
+    loop
+        call TriggerRegisterPlayerEvent(whichTrigger, Player(index), whichEvent, null)
+        set index = index + 1
+        exitwhen index == bj_MAX_PLAYER_SLOTS
+    endloop
 endfunction
 //===========================================================
 // 타이머 다이얼로그를 만들고 제목을 설정하는 것까지 하나의 기능으로 묶었습니다. BJ에는 없습니다
