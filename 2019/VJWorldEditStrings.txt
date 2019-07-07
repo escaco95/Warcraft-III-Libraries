@@ -1,0 +1,3 @@
+[WorldEditStrings]
+WESTRING_TRIGCAT_WIDGET="오브젝트"
+WESTRING_TRIGTYPE_widget="오브젝트"
