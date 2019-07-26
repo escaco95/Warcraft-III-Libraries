@@ -123,8 +123,16 @@ function FlashSpecialEffectTargetVJ takes string modelName, widget targetWidget,
     call DestroyEffect(AddSpecialEffectTarget(modelName,targetWidget,attachPointName))
 endfunction
 //===========================================================
-// N명의 유닛을 생성합니다. 별도의 누수가 발생하지 않습니다.
+// N명의 유닛을 생성합니다. 별도의 누수가 발생하지 않습니다.(스크립트 버전)
 function CreateUnitsVJ takes integer amount, player id, integer unitid, real x, real y, real face returns nothing
+    loop
+        exitwhen amount < 1
+        call CreateUnit(id,unitid,x,y,face)
+        set amount = amount - 1
+    endloop
+endfunction
+// N명의 유닛을 생성합니다. 별도의 누수가 발생하지 않습니다.(GUI 버전 스왑)
+function CreateUnitsSwapVJ takes integer amount, integer unitid, player id, real x, real y, real face returns nothing
     loop
         exitwhen amount < 1
         call CreateUnit(id,unitid,x,y,face)
