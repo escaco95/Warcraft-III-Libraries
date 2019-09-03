@@ -1,0 +1,24 @@
+// Copyright (c) 2019 escaco95
+// Distributed under the BSD License, Version 1.0.
+// See original source at GitHub https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/Window.j
+// TESH custom intellisense https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/Window.Intellisense.txt
+function TriggerRegisterWindowButtonEvent takes trigger whichTrigger, windowbuttonindexer whichWindowButton returns event
+endfunction
+function TriggerRegisterWindowEvent takes trigger whichTrigger, window whichWindow returns event
+endfunction
+function DestroyWindow takes window whichWindow returns nothing
+endfunction
+function WindowAddButton takes window whichWindow, integer id, string text, integer hotkey returns windowbutton
+endfunction
+function WindowSetCallback takes window whichWindow, code callbackFunction returns nothing
+endfunction
+function WindowSetMessage takes window whichWindow, string message returns nothing
+endfunction
+function WindowDisplay takes window whichWindow, player whichPlayer, boolean flag returns nothing
+endfunction
+function WindowClear takes window whichWindow returns nothing
+endfunction
+function CreateWindow takes nothing returns window
+endfunction
+function CreateWindowEx takes string message returns window
+endfunction
