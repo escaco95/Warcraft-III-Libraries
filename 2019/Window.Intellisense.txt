@@ -8,7 +8,9 @@ function TriggerRegisterWindowEvent takes trigger whichTrigger, window whichWind
 endfunction
 function DestroyWindow takes window whichWindow returns nothing
 endfunction
-function WindowAddButton takes window whichWindow, integer id, string text, integer hotkey returns windowbutton
+function WindowAddButton takes window whichWindow, integer id, string text returns windowbutton
+endfunction
+function WindowAddButtonEx takes window whichWindow, integer id, string text, integer hotkey returns windowbutton
 endfunction
 function WindowSetCallback takes window whichWindow, code callbackFunction returns nothing
 endfunction
