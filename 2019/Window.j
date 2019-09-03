@@ -87,7 +87,10 @@ library Window
         call w.destroy()
     endfunction
     /*=======================================================================*/
-    function WindowAddButton takes window w, integer id, string text, integer hotkey returns windowbutton
+    function WindowAddButton takes window w, integer id, string text returns windowbutton
+        return w.addbutton(id,text,0)
+    endfunction
+    function WindowAddButtonEx takes window w, integer id, string text, integer hotkey returns windowbutton
         return w.addbutton(id,text,hotkey)
     endfunction
     function WindowSetCallback takes window w, code c returns nothing
