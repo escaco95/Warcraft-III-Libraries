@@ -82,6 +82,12 @@ library Window
     function TriggerRegisterWindowEvent takes trigger t, window w returns event
         return TriggerRegisterDialogEvent(t,w.super)
     endfunction
+    function GetClickedWindow takes nothing returns window
+        return LoadInteger(H2ID,0,GetHandleId(GetClickedDialog()))
+    endfunction
+    function GetClickedWindowButton takes nothing returns windowbutton
+        return LoadInteger(H2ID,0,GetHandleId(GetClickedButton()))
+    endfunction
     /*=======================================================================*/
     function DestroyWindow takes window w returns nothing
         call w.destroy()
