@@ -6,6 +6,10 @@ function TriggerRegisterWindowButtonEvent takes trigger whichTrigger, windowbutt
 endfunction
 function TriggerRegisterWindowEvent takes trigger whichTrigger, window whichWindow returns event
 endfunction
+function GetClickedWindow takes nothing returns window
+endfunction
+function GetClickedWindowButton takes nothing returns windowbutton
+endfunction
 function DestroyWindow takes window whichWindow returns nothing
 endfunction
 function WindowAddButton takes window whichWindow, integer id, string text returns windowbutton
