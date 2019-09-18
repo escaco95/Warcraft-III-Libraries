@@ -65,6 +65,7 @@ library Window
                 set cdx.button = null
             endloop
             set .head = 0
+            call DialogClear(.super)
         endmethod
         /*=======================================================================*/
         method destroy takes nothing returns nothing
