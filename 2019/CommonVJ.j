@@ -1,12 +1,12 @@
 // Copyright (c) 2019 W3UMF https://cafe.naver.com/w3umf
-// Distributed under the BSD License, Version 190618.0155
+// Distributed under the BSD License, Version 190920.0059
 // See original source at GitHub https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.j
 // TESH custom intellisense https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/2019/CommonVJ.Intellisense.txt
 /* 
 Contributors
 escaco, 은방
 */
-library CommonVJ
+library vJDKCommon
 //===========================================================
 // 텍스트 - 모든 플레이어에게 (메시지)를 표시합니다
 function VJDebugMsg takes string message returns nothing
@@ -225,6 +225,13 @@ endfunction
 // 실수의 소수점을 떼고 문자열로 변환합니다. BJ에 없는 기능입니다
 function R2I2S takes real value returns string
     return I2S(R2I(value))
+endfunction
+// 논리값을 논리값에 의거한 문자열로 변환합니다.
+function B2S takes boolean value, string iffalse, string iftrue returns string
+    if value then
+        return iftrue
+    endif
+    return iffalse
 endfunction
 //===========================================================
 // GUI에 유닛 그룹 파괴를 요청합니다
