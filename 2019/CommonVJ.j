@@ -227,11 +227,11 @@ function R2I2S takes real value returns string
     return I2S(R2I(value))
 endfunction
 // 논리값을 논리값에 의거한 문자열로 변환합니다.
-function B2S takes boolean value, string iffalse, string iftrue returns string
+function B2S takes boolean value, string ontrue, string onfalse returns string
     if value then
-        return iftrue
+        return ontrue
     endif
-    return iffalse
+    return onfalse
 endfunction
 //===========================================================
 // GUI에 유닛 그룹 파괴를 요청합니다
