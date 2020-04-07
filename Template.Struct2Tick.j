@@ -10,7 +10,7 @@
         //
         // 구조체를 틱으로 변환합니다 (반드시 struct ~ endstruct 사이 '최하단'에 사용되어야 합니다)
         //
-        //! runtextmacro Struct2TickVJ()
+        //! runtextmacro Struct2Tick()
     endstruct
 
     //
@@ -43,7 +43,7 @@
         private method OnDestroy takes nothing returns nothing
             set this.Dummy = null
         endmethod
-        //! runtextmacro Struct2TickVJ()
+        //! runtextmacro Struct2Tick()
     endstruct
 
     function CallBack takes nothing returns nothing
@@ -61,7 +61,7 @@
 globals
     hashtable STRUCT_2_TICK_TABLE = InitHashtable()
 endglobals
-//! textmacro Struct2TickVJ
+//! textmacro Struct2Tick
         private static integer MAX = 0
         private timer T
         static method operator Count takes nothing returns integer
