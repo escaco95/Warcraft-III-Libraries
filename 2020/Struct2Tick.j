@@ -10,9 +10,8 @@
         //
         // 구조체를 틱으로 변환합니다 (반드시 struct ~ endstruct 사이 '최하단'에 사용되어야 합니다)
         //
-        //! runtextmacro Struct2Tick()
+        //! runtextmacro Struct2TickVJ()
     endstruct
-
     //
     // 유닛 정보가 딸린 틱(UnitTick)의 사용 예시
     //
@@ -22,19 +21,14 @@
         set t.Dummy = null
         call t.Destroy()
     endfunction
-
     function TestFunction takes nothing returns nothing
         local UnitTick t = UnitTick.Create()
         set t.Dummy = CreateUnit(Player(0),'hfoo',0,0,270)
         call t.Start( 1.00, false, function CallBack )
     endfunction
-
-
-
     //=========================================================================
     //  숙련자용 사용예시 (내용은 위와 동일)
     //=========================================================================
-
     struct UnitTick
         unit Dummy
         //
@@ -43,15 +37,13 @@
         private method OnDestroy takes nothing returns nothing
             set this.Dummy = null
         endmethod
-        //! runtextmacro Struct2Tick()
+        //! runtextmacro Struct2TickVJ()
     endstruct
-
     function CallBack takes nothing returns nothing
         local UnitTick t = UnitTick.GetExpired()
         call KillUnit(t.Dummy)
         call t.Destroy() // 자동 OnDestroy call -> null -> 누수해결
     endfunction
-
     function TestFunction takes nothing returns nothing
         local UnitTick t = UnitTick.Create()
         set t.Dummy = CreateUnit(Player(0),'hfoo',0,0,270)
