@@ -1,5 +1,7 @@
 //*****************************************************************
-/* 쿨감 매니지먼트 시스템 */
+// 쿨감 매니지먼트 시스템
+//     Version 1.4
+//*****************************************************************
 library CoolTimeSystem initializer OnMapLoad
     //=============================================================
     // 디버그용 출력 기능
@@ -26,6 +28,7 @@ library CoolTimeSystem initializer OnMapLoad
         
         /* 쿨감 이벤트 처리용 변수 & 상수 */
         key EVENT_COOLDOWN_START
+        key EVENT_COOLDOWN_START_AFTER
         key EVENT_COOLDOWN_RUNNING
         key EVENT_COOLDOWN_END
         
@@ -99,6 +102,7 @@ library CoolTimeSystem initializer OnMapLoad
         static method create takes unit u, integer id, integer lev, real coold returns thistype
             local thistype this
             set coold = FireAbilEvent(EVENT_COOLDOWN_START,u,id,coold,coold,0.0)
+            set coold = FireAbilEvent(EVENT_COOLDOWN_START_AFTER,u,id,coold,coold,0.0)
             /*if coold < MIN_COOL then
                 debug call DebugMsg( "쿨감 이벤트 계산 결과, 즉시쿨초." )
                 call FireAbilEvent(EVENT_COOLDOWN_END,u,id,coold,coold,0.0)
