@@ -196,12 +196,22 @@ library CustomStun initializer OnMapLoad
             call DoStun(src,dst,timeout)
         endmethod
         //---------------------------------------------------------
+        // 커스텀 스턴 - (dst)유닛으로부터 스턴을 해제합니다
         static method Clear takes unit dst returns nothing
             local StunData data = StunData.GetStunData(dst)
             if data == 0 then
                 return
             endif
+            set data.Elapsed = 0.0
             set data.FullTimeout = 0.0
+        endmethod
+        // 커스텀 스턴 - (dst)유닛의 남은 스턴 시간을 가져옵니다
+        static method GetUnitStunRemaining takes unit dst returns real
+            local StunData data = StunData.GetStunData(dst)
+            if data == 0 then
+                return 0.0
+            endif
+            return data.FullTimeout - data.Elapsed
         endmethod
         //---------------------------------------------------------
     endstruct
