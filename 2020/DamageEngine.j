@@ -75,11 +75,12 @@ library DamageEngine
             
             call TriggerEvaluate(E_ANYHIT)
         endmethod
-        private static method OnEvaluate takes nothing returns nothing
+        private static method OnEvaluate takes nothing returns boolean
             if GetEventDamage() == 0 then
-                return
+                return false
             endif
             call DamageProcess(GetEventDamageSource(),GetTriggerUnit())
+            return false
         endmethod
         //---------------------------------------------------------
         private static method OnClearTick takes nothing returns nothing
