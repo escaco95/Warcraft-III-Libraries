@@ -1,7 +1,7 @@
 /********************************************************************************/
 /*
     Struct2Buff by 동동주(escaco)
-        Version 0.90
+        Version 0.91
 
     1. 나만의 버프 만드는 방법
     
@@ -188,8 +188,8 @@ private static method Alloc takes unit cas, unit src, real dur, real tout, integ
         endif
     else
         static if thistype.OnBeforeStack.exists then
-            if this.OnBeforeStack(tout, dur, arg) then
-                call this.OnAfterStack(tout, dur, arg)
+            if this.OnBeforeStack(cas,tout, dur, arg) then
+                call this.OnAfterStack(cas,tout, dur, arg)
                 if .Duration > 0 then
                     call TimerStart(.T_DURATION,.Duration,false,function thistype.AtDuration)
                 else
