@@ -1,7 +1,19 @@
 /********************************************************************************/
 /*
     Struct2Buff by 동동주(escaco)
-        Version 0.91
+        Version 0.92
+        
+    [업데이트]
+    
+    - 2020.05.29 : 0.92
+    
+        # 이제 모든 Timeout(틱) 기능을 가진 버프는 유닛이 '제거' 되면 버프가 소멸합니다
+            ** 이제, 제작자가 별도로 체크 코드를 넣어주지 않아도 됩니다
+            ** 유닛이 제거될 경우 OnRemove가 실행됩니다
+            ** Delay형 버프는 어차피 Delay가 끝나면 사라지므로 별도의 처리를 하지 않았습니다
+    
+    
+    [개요]
 
     1. 나만의 버프 만드는 방법
     
@@ -100,6 +112,12 @@ endlibrary
 //! textmacro Struct2Buff takes TIMEOUT
 private static key BUFF_KEY
 private static integer BUFF_COUNT = 0
+private static trigger BUFF_ALLOC = CreateTrigger()
+private static unit BUFF_CAS = null
+private static unit BUFF_SRC = null
+private static real BUFF_DUR = 0.0
+private static real BUFF_TOUT = 0.0
+private static integer BUFF_ARG = 0
 private unit Target
 private unit Caster
 private integer Handle
@@ -146,7 +164,15 @@ private static method AtTimeout takes nothing returns nothing
     local thistype this = LoadInteger(TABLE_CBUFF,BUFF_KEY,GetHandleId(GetExpiredTimer()))
     local boolean result = true
     static if thistype.OnTimeout.exists then
-        set result = this.OnTimeout()
+        if GetUnitTypeId(.Target) != 0 then
+            set result = this.OnTimeout()
+        else
+            set result = false
+        endif
+    else
+        if GetUnitTypeId(.Target) == 0 then
+            set result = false
+        endif
     endif
     if not result then
         call this.AtRemoval()
@@ -156,7 +182,12 @@ private static method AtTimeout takes nothing returns nothing
         call TimerStart(.T_TIMEOUT,.Timeout,false,function thistype.AtTimeout)
     endif
 endmethod
-private static method Alloc takes unit cas, unit src, real dur, real tout, integer arg returns nothing
+private static method AtAlloc takes nothing returns boolean
+    local unit cas = BUFF_CAS
+    local unit src = BUFF_SRC
+    local real dur = BUFF_DUR
+    local real tout = BUFF_TOUT
+    local integer arg = BUFF_ARG
     local integer hnd = GetHandleId(src)
     local thistype this = LoadInteger(TABLE_CBUFF,BUFF_KEY,hnd)
     if this == 0 then
@@ -203,6 +234,19 @@ private static method Alloc takes unit cas, unit src, real dur, real tout, integ
             endif
         endif
     endif
+    set cas = null
+    set src = null
+    return false
+endmethod
+private static method Alloc takes unit cas, unit src, real dur, real tout, integer arg returns nothing
+    set BUFF_CAS = cas
+    set BUFF_SRC = src
+    set BUFF_DUR = dur
+    set BUFF_TOUT = tout
+    set BUFF_ARG = arg
+    call TriggerEvaluate(BUFF_ALLOC)
+    set BUFF_CAS = null
+    set BUFF_SRC = null
 endmethod
 static method Count takes nothing returns integer
     return BUFF_COUNT
@@ -226,6 +270,12 @@ static method ApplyEx takes unit cas, unit src, real dur, integer arg returns bo
 endmethod
 method destroy takes nothing returns nothing
     call BJDebugMsg("<Buff>: " + destroy.name + " 사용 금지!")
+endmethod
+private static method onInit takes nothing returns nothing
+    call TriggerAddCondition(BUFF_ALLOC,Condition(function thistype.AtAlloc))
+    static if thistype.OnMapLoad.exists then
+    call thistype.OnMapLoad()
+    endif
 endmethod
 //! endtextmacro
 /********************************************************************************/
