@@ -10,7 +10,7 @@
         //
         // 구조체를 틱으로 변환합니다 (반드시 struct ~ endstruct 사이 '최하단'에 사용되어야 합니다)
         //
-        //! runtextmacro Struct2TickVJ()
+        //! runtextmacro Struct2Tick()
     endstruct
     //
     // 유닛 정보가 딸린 틱(UnitTick)의 사용 예시
