@@ -103,4 +103,11 @@ endglobals
             call PauseTimer( .T )
             call thistype.deallocate( this )
         endmethod
+        static method create takes nothing returns thistype
+            call BJDebugMsg("<Tick>: " + create.name + " 사용 금지!")
+            return 0
+        endmethod
+        method destroy takes nothing returns nothing
+            call BJDebugMsg("<Tick>: " + destroy.name + " 사용 금지!")
+        endmethod
 //! endtextmacro
