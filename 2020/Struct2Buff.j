@@ -268,6 +268,10 @@ static method ApplyEx takes unit cas, unit src, real dur, integer arg returns bo
     call Alloc(cas,src,dur,$TIMEOUT$,arg)
     return true
 endmethod
+static method create takes nothing returns thistype
+    call BJDebugMsg("<Buff>: " + create.name + " 사용 금지!")
+    return 0
+endmethod
 method destroy takes nothing returns nothing
     call BJDebugMsg("<Buff>: " + destroy.name + " 사용 금지!")
 endmethod
