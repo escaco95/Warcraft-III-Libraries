@@ -4,7 +4,13 @@ native UnitAlive takes unit id returns boolean
 library Struct2Pattern
     globals
         hashtable S2PT_IN_TABLE = InitHashtable()
+        integer S2PT_COUNT = 0
     endglobals
+    struct Struct2Pattern extends array
+        static method operator Count takes nothing returns integer
+            return S2PT_COUNT
+        endmethod
+    endstruct
 endlibrary
 /********************************************************************************/
 //! textmacro Struct2Pattern
@@ -16,19 +22,30 @@ private integer IN_C_PHASE
 private method operator Phase takes nothing returns integer
     return .IN_C_PHASE
 endmethod
+private method ResetPhase takes integer new returns nothing
+    set .IN_N_PHASE = 1
+endmethod
 private method operator Phase= takes integer new returns nothing
-    if new <= .IN_C_PHASE then
+    if new <= .IN_N_PHASE then
         return
     endif
     set .IN_N_PHASE = new
-    debug call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"페이즈 "+I2S(new)+" 할당!")
 endmethod
 private static method IN_TICK takes nothing returns nothing
     local thistype this = LoadInteger(S2PT_IN_TABLE,0,GetHandleId(GetExpiredTimer()))
+    if not UnitAlive(.unit) then
+        call RemoveSavedInteger(S2PT_IN_TABLE,0,GetHandleId(.IN_TIMER))
+        call DestroyTimer(.IN_TIMER)
+        set .IN_TIMER = null
+        set .unit = null
+        call .deallocate()
+        set S2PT_COUNT = S2PT_COUNT - 1
+        return
+    endif
     static if thistype.OnPatternTick.exists then
         call .OnPatternTick()
     endif
-    if .IN_C_PHASE < .IN_N_PHASE then
+    if .IN_C_PHASE != .IN_N_PHASE then
         static if thistype.OnPhaseEnd.exists then
             call .OnPhaseEnd()
         endif
@@ -43,6 +60,7 @@ private static method IN_TICK takes nothing returns nothing
 endmethod
 static method Set takes unit u returns nothing
     local thistype this = .allocate()
+    set S2PT_COUNT = S2PT_COUNT + 1
     set .unit = u
     set .IN_C_PHASE = 1
     set .IN_N_PHASE = 1
