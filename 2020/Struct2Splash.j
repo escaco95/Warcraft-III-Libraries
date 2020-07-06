@@ -1,4 +1,3 @@
-```Jass
 /********************************************************************************/
 /*
     Struct2Splash by 동동주(escaco)
@@ -136,4 +135,3 @@ private static method onInit takes nothing returns nothing
 endmethod
 //! endtextmacro
 /********************************************************************************/
-```
