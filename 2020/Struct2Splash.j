@@ -1,3 +1,4 @@
+```
 /********************************************************************************/
 /*
     Struct2Splash by 동동주(escaco)
@@ -34,10 +35,14 @@ library Struct2Splash
         integer S2SP_ENV = 0
         group array S2SP_GROUP
         boolexpr S2SP_B
-    endglobals
     
-    private struct Struct2Splash extends array
+        integer S2SP_COUNT = 0
+    endglobals
+    struct Struct2Splash extends array
         implement INITS
+        static method operator Count takes nothing returns integer
+            return S2SP_COUNT
+        endmethod
     endstruct
     
     private module INITS
@@ -54,6 +59,7 @@ endlibrary
 private static trigger IN_SPLASH = CreateTrigger()
 private static real IN_X = 0.0
 private static real IN_Y = 0.0
+private static rect IN_R = null
 private static real IN_DIST = 0.0
 private static integer IN_ARG = 0
 private static method OnSplash takes nothing returns boolean
@@ -61,6 +67,7 @@ private static method OnSplash takes nothing returns boolean
     local real x = IN_X
     local real y = IN_Y
     local real dist = IN_DIST
+    local rect r = IN_R
     local group g = S2SP_GROUP[S2SP_ENV]
     local unit u
     if g == null then
@@ -68,7 +75,12 @@ private static method OnSplash takes nothing returns boolean
         set S2SP_GROUP[S2SP_ENV] = g
         set S2SP_ENV = S2SP_ENV + 1
     endif
-    call GroupEnumUnitsInRange(g,x,y,dist,S2SP_B)
+    if r != null then
+        call GroupEnumUnitsInRect(g,r,S2SP_B)
+        set r = null
+    else
+        call GroupEnumUnitsInRange(g,x,y,dist,S2SP_B)
+    endif
     loop
         set u = FirstOfGroup(g)
         exitwhen u == null
@@ -86,6 +98,7 @@ private static method OnSplash takes nothing returns boolean
     return false
 endmethod
 static method Create takes nothing returns thistype
+    set S2SP_COUNT = S2SP_COUNT + 1
     return .allocate()
 endmethod
 method Destroy takes nothing returns nothing
@@ -93,6 +106,7 @@ method Destroy takes nothing returns nothing
         call .OnDestroy()
     endif
     call .deallocate()
+    set S2SP_COUNT = S2SP_COUNT - 1
 endmethod
 static method create takes nothing returns thistype
     call BJDebugMsg("<Splash>: " + create.name + " 사용 금지!")
@@ -106,6 +120,15 @@ method Splash takes real x, real y, real dist returns nothing
     set IN_Y = y
     set IN_DIST = dist
     set IN_ARG = this
+    set IN_R = null
+    call TriggerEvaluate(IN_SPLASH)
+endmethod
+method SplashRect takes rect r returns nothing
+    set IN_X = 0.0
+    set IN_Y = 0.0
+    set IN_DIST = 0.0
+    set IN_ARG = this
+    set IN_R = r
     call TriggerEvaluate(IN_SPLASH)
 endmethod
 private static method onInit takes nothing returns nothing
@@ -113,3 +136,4 @@ private static method onInit takes nothing returns nothing
 endmethod
 //! endtextmacro
 /********************************************************************************/
+```
