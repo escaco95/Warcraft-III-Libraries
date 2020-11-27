@@ -2,7 +2,7 @@
  * CFX Library
  *
  * Copyright (c) 2020 escaco95@naver.com
- * Distributed under the BSD License, Version 201128.1
+ * Distributed under the BSD License, Version 201128.2
  */
 library CFX
 globals
@@ -109,7 +109,7 @@ endmethod
 /*================================================================================================*/
 //! endtextmacro
 /**
- * CFXFrame struct
+ * CFXStage struct
  *
  * [Supports]
  *  - local thistype this = thistype.Create()
@@ -119,14 +119,14 @@ endmethod
  *  - local integer timerHandle = this.Handle
  *  - local real elapsed = this.Elapsed
  *  - local real timeout = this.Timeout
- *  - local integer frame = this.Frame
+ *  - local integer stage = this.Stage
  *  - private method OnCreate takes nothing returns nothing
  *  - private method OnStop takes nothing returns nothing
  *  - private method OnStart takes nothing returns nothing
  *  - private method OnInvalidate takes nothing returns nothing
  *  - private method OnTick takes nothing returns nothing
  */
-//! textmacro CFXFrame
+//! textmacro CFXStage
 /*================================================================================================*/
 static method create takes nothing returns thistype
     debug call DisplayTextToPlayer(GetLocalPlayer(), 0.0, 0.0, "[경고] thistype.create는 사용할 수 없습니다. 대신 thistype.Create()를 사용하세요.")
@@ -140,7 +140,7 @@ private boolean CFXexists
 private timer CFXtimer
 private integer CFXhandle
 private real CFXelapsed
-private integer Frame
+private integer Stage
 method operator Exists takes nothing returns boolean
     return this.CFXexists
 endmethod
@@ -163,7 +163,7 @@ private static method CFXAtTick takes nothing returns nothing
         endif
     endif
     set this.CFXelapsed = this.CFXelapsed + TimerGetTimeout(this.CFXtimer)
-    set this.Frame = this.Frame + 1
+    set this.Stage = this.Stage + 1
     static if thistype.OnTick.exists then
         call this.OnTick()
     endif
@@ -184,7 +184,7 @@ static method Create takes nothing returns thistype
     set this.CFXhandle = GetHandleId(this.CFXtimer)
     call SaveInteger(CFX_TABLE,0,this.CFXhandle,this)
     set this.CFXelapsed = 0.0
-    set this.Frame = 0
+    set this.Stage = 0
     static if thistype.OnCreate.exists then
         call this.OnCreate()
     endif
