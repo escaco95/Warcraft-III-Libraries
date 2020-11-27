@@ -2,12 +2,13 @@
  *  Angle Distance Polar.j
  *
  *  Copyright (c) 2020 escaco95
- *  Distributed under the BSD License, Version 201118.7
+ *  Distributed under the BSD License, Version 201128.1
  *
  * 각도/거리/오프셋을 보다 쉽게 계산할 수 있도록 고안된 라이브러리입니다.
  *
  * [최신 업데이트]
  *   1. Angle과 Polar에 (UTA/UTP/UTW) 접미사 추가(기초 사용자용)
+ *   2. Polar 이후 Angle 전환으로 이어지는 PolarAngle 추가
  * 
  * [각도 & 거리]
  * PBP : Point Between Point (좌표와 좌표 간) (X,Y,X2,Y2)
@@ -52,6 +53,12 @@
  *   Polar.UTP(유닛, 거리, X, Y) //유닛을 X,Y 방향으로 거리만큼 뿅 이동시킵니다.
  *   Polar.UTW(유닛, 거리, 대상) //유닛을 대상 방향으로 거리만큼 뿅 이동시킵니다.
  *   Polar.RadUTA(유닛, 거리, 라디안각)
+ *
+ * [오프셋-각도]
+ *   PolarAngle.UTA(유닛, 거리, 각도) //Polar.UTA + Angle.UTA
+ *   PolarAngle.UTP(유닛, 거리, X, Y) //Polar.UTP + Angle.UTP
+ *   PolarAngle.UTW(유닛, 거리, 대상) //Polar.UTW + Angle.UTW
+ *   PolarAngle.RadUTA(유닛, 거리, 라디안각) //Polar.RadUTA + Angle.RadUTA
  */
 
 library Angle
@@ -108,6 +115,9 @@ library Angle
             local real dy = GetWidgetY( t ) - y
             return Atan2( dy, dx )
         endmethod
+        static method RadUTA takes unit u, real angle returns nothing
+            call SetUnitFacing(u,angle*bj_RADTODEG)
+        endmethod
         static method UTA takes unit u, real angle returns nothing
             call SetUnitFacing(u,angle)
         endmethod
@@ -117,9 +127,6 @@ library Angle
         endmethod
         static method UTW takes unit u, widget t returns nothing
             local real angle = Atan2(GetWidgetY(t)-GetWidgetY(u), GetWidgetX(t)-GetWidgetX(u))
-            call SetUnitFacing(u,angle*bj_RADTODEG)
-        endmethod
-        static method RadUTA takes unit u, real angle returns nothing
             call SetUnitFacing(u,angle*bj_RADTODEG)
         endmethod
     endstruct
@@ -168,6 +175,10 @@ library Polar
         static method Y takes real dist, real angle returns real
             return dist * Sin( angle * bj_DEGTORAD )
         endmethod
+        static method RadUTA takes unit u, real dist, real angle returns nothing
+            call SetUnitX(u, GetUnitX(u)+ dist * Cos(angle))
+            call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle))
+        endmethod
         static method UTA takes unit u, real dist, real angle returns nothing
             call SetUnitX(u, GetUnitX(u)+ dist * Cos(angle * bj_DEGTORAD))
             call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle * bj_DEGTORAD))
@@ -182,9 +193,34 @@ library Polar
             call SetUnitX(u, GetUnitX(u)+ dist * Cos(angle))
             call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle))
         endmethod
+    endstruct
+
+endlibrary
+
+library PolarAngle
+
+    struct PolarAngle extends array
         static method RadUTA takes unit u, real dist, real angle returns nothing
             call SetUnitX(u, GetUnitX(u)+ dist * Cos(angle))
             call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle))
+            call SetUnitFacing(u,angle*bj_RADTODEG)
+        endmethod
+        static method UTA takes unit u, real dist, real angle returns nothing
+            call SetUnitX(u, GetUnitX(u)+ dist * Cos(angle * bj_DEGTORAD))
+            call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle * bj_DEGTORAD))
+            call SetUnitFacing(u,angle)
+        endmethod
+        static method UTP takes unit u, real dist, real tx, real ty returns nothing
+            local real angle = Atan2(ty-GetWidgetY(u), tx-GetWidgetX(u))
+            call SetUnitX(u, GetUnitX(u)+ dist * Cos(angle))
+            call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle))
+            call SetUnitFacing(u,angle*bj_RADTODEG)
+        endmethod
+        static method UTW takes unit u, real dist, widget t returns nothing
+            local real angle = Atan2(GetWidgetY(t)-GetWidgetY(u), GetWidgetX(t)-GetWidgetX(u))
+            call SetUnitX(u, GetUnitX(u)+ dist * Cos(angle))
+            call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle))
+            call SetUnitFacing(u,angle*bj_RADTODEG)
         endmethod
     endstruct
 
