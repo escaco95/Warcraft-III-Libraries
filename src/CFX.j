@@ -91,7 +91,7 @@ static method Create takes nothing returns thistype
 endmethod
 method Stop takes nothing returns nothing
     if not this.CFXexists then
-        debug call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"[WARN] thistype CTX 중복 Stop 시도됨!")
+        debug call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"[WARN] thistype CFX 중복 Stop 시도됨!")
         return
     endif
     set this.CFXexists = false
@@ -192,7 +192,7 @@ static method Create takes nothing returns thistype
 endmethod
 method Stop takes nothing returns nothing
     if not this.CFXexists then
-        debug call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"[WARN] thistype CTX 중복 Stop 시도됨!")
+        debug call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"[WARN] thistype CFX 중복 Stop 시도됨!")
         return
     endif
     set this.CFXexists = false
