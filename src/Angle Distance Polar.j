@@ -2,7 +2,7 @@
  *  Angle Distance Polar Position Curve.j
  *
  *  Copyright (c) 2020 escaco95
- *  Distributed under the BSD License, Version 201128.4
+ *  Distributed under the BSD License, Version 201208.1
  *
  * 각도/거리/오프셋을 보다 쉽게 계산할 수 있도록 고안된 라이브러리입니다.
  *
@@ -220,14 +220,14 @@ library Polar
             call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle))
         endmethod
         static method RadITA takes item i, real dist, real angle returns nothing
-            call SetItemPosition(i,GetWidgetX(t)+ dist * Cos(angle),GetWidgetY(t)+ dist * Sin(angle))
+            call SetItemPosition(i,GetWidgetX(i))+ dist * Cos(angle),GetWidgetY(i)+ dist * Sin(angle))
         endmethod
         static method ITA takes item i, real dist, real angle returns nothing
-            call SetItemPosition(i,GetWidgetX(t)+ dist * Cos(angle * bj_DEGTORAD),GetWidgetY(t)+ dist * Sin(angle * bj_DEGTORAD))
+            call SetItemPosition(i,GetWidgetX(i)+ dist * Cos(angle * bj_DEGTORAD),GetWidgetY(i)+ dist * Sin(angle * bj_DEGTORAD))
         endmethod
         static method ITW takes item i, real dist, widget t returns nothing
-            local real angle = Atan2(GetWidgetY(t)-GetWidgetY(u), GetWidgetX(t)-GetWidgetX(u))
-            call SetItemPosition(i,GetWidgetX(t)+ dist * Cos(angle),GetWidgetY(t)+ dist * Sin(angle))
+            local real angle = Atan2(GetWidgetY(t)-GetWidgetY(i), GetWidgetX(t)-GetWidgetX(i))
+            call SetItemPosition(i,GetWidgetX(i)+ dist * Cos(angle),GetWidgetY(i)+ dist * Sin(angle))
         endmethod
     endstruct
 
