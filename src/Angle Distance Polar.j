@@ -337,7 +337,7 @@ library Curve
         */ real h, real p returns nothing
             set cX = x1 + p * (x2 - x1)
             set cY = y1 + p * (y2 - y1)
-            set cZ = z1 + p * (z2 - z1) + h * Sin( bj_PI * 2 * p )
+            set cZ = z1 + p * (z2 - z1) + h * Sin( bj_PI * p )
         endmethod
     endstruct
 
