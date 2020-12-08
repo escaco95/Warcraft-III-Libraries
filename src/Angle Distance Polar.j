@@ -1,5 +1,5 @@
 /**
- *  Angle Distance Polar Position Curve.j
+ *  Angle Distance Polar.j
  *
  *  Copyright (c) 2020 escaco95
  *  Distributed under the BSD License, Version 201208.1
@@ -220,7 +220,7 @@ library Polar
             call SetUnitY(u, GetUnitY(u)+ dist * Sin(angle))
         endmethod
         static method RadITA takes item i, real dist, real angle returns nothing
-            call SetItemPosition(i,GetWidgetX(i))+ dist * Cos(angle),GetWidgetY(i)+ dist * Sin(angle))
+            call SetItemPosition(i,GetWidgetX(i)+ dist * Cos(angle),GetWidgetY(i)+ dist * Sin(angle))
         endmethod
         static method ITA takes item i, real dist, real angle returns nothing
             call SetItemPosition(i,GetWidgetX(i)+ dist * Cos(angle * bj_DEGTORAD),GetWidgetY(i)+ dist * Sin(angle * bj_DEGTORAD))
