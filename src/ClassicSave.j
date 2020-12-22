@@ -12,12 +12,20 @@ function Save$NAME$ takes player p, string pn returns string
     local integer pid = GetPlayerId(p)
     local ClassicSaveCode cd = ClassicSaveCode.create($NAME$.CHARSET)
     local string s
+    local integer value
     local integer i = 0
     local integer parity = GetRandomInt(1,$NAME$.MAX_PARITY)
     call cd.Encode(parity,$NAME$.MAX_PARITY)
     loop
         exitwhen i == $NAME$.ARGS
-        call cd.Encode($NAME$.ARG[pid*$NAME$.ARGS+i],$NAME$.ARGMAX[i])
+        set value = $NAME$.ARG[pid*$NAME$.ARGS+i]
+        if value > $NAME$.ARGMAX[i] then
+            set value = $NAME$.ARGMAX[i]
+        endif
+        if value < 0 then
+            set value = 0
+        endif
+        call cd.Encode(value,$NAME$.ARGMAX[i])
         set i = i + 1
     endloop
     call cd.Encode(parity,$NAME$.MAX_PARITY)
