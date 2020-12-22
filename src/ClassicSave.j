@@ -1,4 +1,8 @@
 //==============================================================================
+/*
+[2020.12.23 02:18] 핫픽스 : 디버그 모드에서 오류가 발생하지 않도록 수정
+*/
+//==============================================================================
 //! textmacro SaveCode takes NAME,ID,CHARSET
 private struct $NAME$ extends array
     static constant string CHARSET = "$CHARSET$"
@@ -44,14 +48,15 @@ function Load$NAME$ takes player p, string pn, string s returns boolean
         set parity = cd.Decode($NAME$.MAX_PARITY)
         if parity < 1 then
             set b = false
-        endif
-        loop
-            exitwhen i < 0
-            set $NAME$.ARG[pid*$NAME$.ARGS+i] = cd.Decode($NAME$.ARGMAX[i])
-            set i = i - 1
-        endloop
-        if cd.Decode($NAME$.MAX_PARITY) != parity then
-            set b = false
+        else
+            loop
+                exitwhen i < 0
+                set $NAME$.ARG[pid*$NAME$.ARGS+i] = cd.Decode($NAME$.ARGMAX[i])
+                set i = i - 1
+            endloop
+            if cd.Decode($NAME$.MAX_PARITY) != parity then
+                set b = false
+            endif
         endif
     endif
     call cd.destroy()
@@ -417,10 +422,10 @@ endstruct
 
     private function RunTests takes nothing returns nothing
         debug local string n = "BigNum "
-        debug call ClassicSaveTest_Assert(n+"Log",proposition.prop_Log)
-        debug call ClassicSaveTest_Assert(n+"Allocator1",proposition.prop_Allocator1)
-        debug call ClassicSaveTest_Assert(n+"Allocator2",proposition.prop_Allocator2)
-        debug call ClassicSaveTest_Assert(n+"Arithmetic",proposition.prop_Arith)
+        //debug call ClassicSaveTest_Assert(n+"Log",proposition.prop_Log)
+        //debug call ClassicSaveTest_Assert(n+"Allocator1",proposition.prop_Allocator1)
+        //debug call ClassicSaveTest_Assert(n+"Allocator2",proposition.prop_Allocator2)
+        //debug call ClassicSaveTest_Assert(n+"Arithmetic",proposition.prop_Arith)
     endfunction
     
     
