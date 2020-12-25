@@ -1,5 +1,7 @@
 //==============================================================================
 /*
+[2020.12.25 21:44] 업데이트 : STA (Seperate Thread Action) 기능 추가
+[2020.12.25 21:44] 업데이트 : 텍스트파일 작성 기능 추가 (ClassicTextFile~)
 [2020.12.23 02:18] 핫픽스 : 디버그 모드에서 오류가 발생하지 않도록 수정
 */
 //==============================================================================
@@ -7,6 +9,41 @@
     static constant string CHARSET = "$CHARSET$"
     static constant integer MAX_PARITY = 5
     static constant integer ID = $ID$
+    private static player STA_P = null
+    private static integer STA_PID = 0
+    private static string STA_PN = null
+    private static string STA_S = null
+    private static ClassicSaveCode STA_CD = 0
+    private static method STABeforeSave takes nothing returns nothing
+        static if thistype.OnBeforeSave.exists then
+            call thistype.OnBeforeSave(STA_P,STA_PID,STA_PN)
+        endif
+    endmethod
+    private static method STASave takes nothing returns nothing
+        static if thistype.OnSave.exists then
+            call thistype.OnSave(STA_P,STA_PID,STA_PN,STA_CD)
+        endif
+    endmethod
+    private static method STAAfterSave takes nothing returns nothing
+        static if thistype.OnAfterSave.exists then
+            call thistype.OnAfterSave(STA_P,STA_PID,STA_PN,STA_S)
+        endif
+    endmethod
+    private static method STABeforeLoad takes nothing returns nothing
+        static if thistype.OnBeforeLoad.exists then
+            call thistype.OnBeforeLoad(STA_P,STA_PID,STA_PN,STA_S)
+        endif
+    endmethod
+    private static method STALoad takes nothing returns nothing
+        static if thistype.OnLoad.exists then
+            call thistype.OnLoad(STA_P,STA_PID,STA_PN,STA_CD)
+        endif
+    endmethod
+    private static method STAAfterLoad takes nothing returns nothing
+        static if thistype.OnAfterLoad.exists then
+            call thistype.OnAfterLoad(STA_P,STA_PID,STA_PN)
+        endif
+    endmethod
     static method Save takes player p, string pn returns string
         local integer pid = GetPlayerId(p)
         local ClassicSaveCode cd = ClassicSaveCode.create(CHARSET)
@@ -14,14 +51,31 @@
         local string s
         call cd.Encode(parity,MAX_PARITY)
         static if thistype.OnBeforeSave.exists then
-            call thistype.OnBeforeSave(p,pid,pn)
+            //call thistype.OnBeforeSave(p,pid,pn)
+            set STA_P = p
+            set STA_PID = pid
+            set STA_PN = pn
+            call ForForce(bj_FORCE_PLAYER[0], function thistype.STABeforeSave)
         endif
         static if thistype.OnSave.exists then
-            call thistype.OnSave(p,pid,pn,cd)
+            //call thistype.OnSave(p,pid,pn,cd)
+            set STA_P = p
+            set STA_PID = pid
+            set STA_PN = pn
+            set STA_CD = cd
+            call ForForce(bj_FORCE_PLAYER[0], function thistype.STASave)
         endif
         call cd.Encode(parity,MAX_PARITY)
         set s = cd.Save(pn,ID)
         call cd.destroy()
+        static if thistype.OnAfterSave.exists then
+            //call thistype.OnAfterSave(p,pid,pn,s)
+            set STA_P = p
+            set STA_PID = pid
+            set STA_PN = pn
+            set STA_S = s
+            call ForForce(bj_FORCE_PLAYER[0], function thistype.STAAfterSave)
+        endif
         return s
     endmethod
     static method Load takes player p, string pn, string s returns boolean
@@ -29,12 +83,25 @@
         local ClassicSaveCode cd = ClassicSaveCode.create(CHARSET)
         local boolean b = cd.Load(pn,s,ID)
         local integer parity
+        static if thistype.OnBeforeLoad.exists then
+            //call thistype.OnBeforeLoad(p,pid,pn,s)
+            set STA_P = p
+            set STA_PID = pid
+            set STA_PN = pn
+            set STA_S = s
+            call ForForce(bj_FORCE_PLAYER[0], function thistype.STABeforeLoad)
+        endif
         if b then
             set b = false
             set parity = cd.Decode(MAX_PARITY)
             if parity > 0 then
                 static if thistype.OnLoad.exists then
-                    call thistype.OnLoad(p,pid,pn,cd)
+                    //call thistype.OnLoad(p,pid,pn,cd)
+                    set STA_P = p
+                    set STA_PID = pid
+                    set STA_PN = pn
+                    set STA_CD = cd
+                    call ForForce(bj_FORCE_PLAYER[0], function thistype.STALoad)
                 endif
                 if cd.Decode(MAX_PARITY) == parity then
                     set b = true
@@ -44,7 +111,11 @@
         call cd.destroy()
         if b then
             static if thistype.OnAfterLoad.exists then
-                call thistype.OnAfterLoad(p,pid,pn)
+                //call thistype.OnAfterLoad(p,pid,pn)
+                set STA_P = p
+                set STA_PID = pid
+                set STA_PN = pn
+                call ForForce(bj_FORCE_PLAYER[0], function thistype.STAAfterLoad)
             endif
         endif
         return b
@@ -544,6 +615,16 @@ endstruct
      endif
     endfunction
 
+    /*Threadlongings*/
+    globals
+        private ClassicSaveCode Op_Sc = 0
+        private integer Enc_max = 0
+        private integer Enc_val = 0
+        private BigNum Op_BigNum = 0
+        private integer Op_Arg = 0
+        private integer Op_Result = 0
+    endglobals
+
     struct ClassicSaveCode
         string charsets
         real digits  //logarithmic approximation
@@ -562,14 +643,29 @@ endstruct
             call .bignum.destroy()
         endmethod
 
+        private static method STAEncode takes nothing returns nothing
+            set Op_Sc.digits = Op_Sc.digits + log(Enc_max+1,BASE())
+            call Op_Sc.bignum.MulSmall(Enc_max+1)
+            call Op_Sc.bignum.AddSmall(Enc_val)
+        endmethod
         method Encode takes integer val, integer max returns nothing
-            set .digits = .digits + log(max+1,BASE())
-            call .bignum.MulSmall(max+1)
-            call .bignum.AddSmall(val)
+            //set .digits = .digits + log(max+1,BASE())
+            //call .bignum.MulSmall(max+1)
+            //call .bignum.AddSmall(val)
+            set Op_Sc = this
+            set Enc_val = val
+            set Enc_max = max
+            call ForForce(bj_FORCE_PLAYER[0], function thistype.STAEncode)
         endmethod
 
+        private static method STADecode takes nothing returns nothing
+            set Op_Result = Op_BigNum.DivSmall(Op_Arg+1)
+        endmethod
         method Decode takes integer max returns integer
-            return .bignum.DivSmall(max+1)
+            set Op_BigNum = .bignum
+            set Op_Arg = max
+            call ForForce(bj_FORCE_PLAYER[0], function thistype.STADecode)
+            return Op_Result
         endmethod
 
         method IsEmpty takes nothing returns boolean
@@ -726,5 +822,22 @@ endstruct
         endmethod
     endstruct
 
+    // 텍스트 파일 작성 기능입니다. Preload가 있지만, 직관적인 함수명으로 교체
+    function ClassicTextFileCreate takes player whichPlayer returns nothing
+        if GetLocalPlayer() == whichPlayer then
+            call PreloadGenClear()
+            call PreloadGenStart()
+        endif
+    endfunction
+    function ClassicTextFileWrite takes player whichPlayer, string text returns nothing
+        if GetLocalPlayer() == whichPlayer then
+            call Preload(text)
+        endif
+    endfunction
+    function ClassicTextFileSave takes player whichPlayer, string fileName returns nothing
+        if GetLocalPlayer() == whichPlayer then
+            call PreloadGenEnd(fileName)
+        endif
+    endfunction
 endlibrary
 //==============================================================================
