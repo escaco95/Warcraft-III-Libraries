@@ -3,6 +3,54 @@
 [2020.12.23 02:18] 핫픽스 : 디버그 모드에서 오류가 발생하지 않도록 수정
 */
 //==============================================================================
+//! textmacro CustomSaveCode takes ID, CHARSET
+    static constant string CHARSET = "$CHARSET$"
+    static constant integer MAX_PARITY = 5
+    static constant integer ID = $ID$
+    static method Save takes player p, string pn returns string
+        local integer pid = GetPlayerId(p)
+        local ClassicSaveCode cd = ClassicSaveCode.create(CHARSET)
+        local integer parity = GetRandomInt(1,MAX_PARITY)
+        local string s
+        call cd.Encode(parity,MAX_PARITY)
+        static if thistype.OnBeforeSave.exists then
+            call thistype.OnBeforeSave(p,pid,pn)
+        endif
+        static if thistype.OnSave.exists then
+            call thistype.OnSave(p,pid,pn,cd)
+        endif
+        call cd.Encode(parity,MAX_PARITY)
+        set s = cd.Save(pn,ID)
+        call cd.destroy()
+        return s
+    endmethod
+    static method Load takes player p, string pn, string s returns boolean
+        local integer pid = GetPlayerId(p)
+        local ClassicSaveCode cd = ClassicSaveCode.create(CHARSET)
+        local boolean b = cd.Load(pn,s,ID)
+        local integer parity
+        if b then
+            set b = false
+            set parity = cd.Decode(MAX_PARITY)
+            if parity > 0 then
+                static if thistype.OnLoad.exists then
+                    call thistype.OnLoad(p,pid,pn,cd)
+                endif
+                if cd.Decode(MAX_PARITY) == parity then
+                    set b = true
+                endif
+            endif
+        endif
+        call cd.destroy()
+        if b then
+            static if thistype.OnAfterLoad.exists then
+                call thistype.OnAfterLoad(p,pid,pn)
+            endif
+        endif
+        return b
+    endmethod
+//! endtextmacro
+//==============================================================================
 //! textmacro SaveCode takes NAME,ID,CHARSET
 private struct $NAME$ extends array
     static constant string CHARSET = "$CHARSET$"
