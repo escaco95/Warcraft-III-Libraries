@@ -13,6 +13,8 @@
     private static integer STA_PID = 0
     private static string STA_PN = null
     private static string STA_S = null
+    private static boolean STA_R = false
+    private static boolean STA_OP = false
     private static ClassicSaveCode STA_CD = 0
     private static method STABeforeSave takes nothing returns nothing
         static if thistype.OnBeforeSave.exists then
@@ -21,7 +23,11 @@
     endmethod
     private static method STASave takes nothing returns nothing
         static if thistype.OnSave.exists then
+            set STA_OP = false
             call thistype.OnSave(STA_P,STA_PID,STA_PN,STA_CD)
+            set STA_OP = true
+        else
+            set STA_OP = true
         endif
     endmethod
     private static method STAAfterSave takes nothing returns nothing
@@ -36,7 +42,13 @@
     endmethod
     private static method STALoad takes nothing returns nothing
         static if thistype.OnLoad.exists then
-            call thistype.OnLoad(STA_P,STA_PID,STA_PN,STA_CD)
+            set STA_R = false
+            set STA_OP = false
+            set STA_R = thistype.OnLoad(STA_P,STA_PID,STA_PN,STA_CD)
+            set STA_OP = true
+        else
+            set STA_R = true
+            set STA_OP = true
         endif
     endmethod
     private static method STAAfterLoad takes nothing returns nothing
@@ -103,7 +115,7 @@
                     set STA_CD = cd
                     call ForForce(bj_FORCE_PLAYER[0], function thistype.STALoad)
                 endif
-                if cd.Decode(MAX_PARITY) == parity then
+                if STA_OP and STA_R and cd.Decode(MAX_PARITY) == parity then
                     set b = true
                 endif
             endif
