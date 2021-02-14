@@ -1,7 +1,7 @@
 library FixCam initializer main
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // FixCam By 동동주
-// 2021.02.14
+// 2021.02.15
 // 
 // 시야나 카메라를 설정하고 나서, 플레이어가 마우스휠을 굴리거나, Insert/Delete 키를 누르면
 // 카메라 설정이 풀려 되돌아가는 현상. 짜증나셨죠?
@@ -233,7 +233,7 @@ function FixCamSetFieldEx takes player p, camerafield field, real value, real ea
     /*실행*/
     set id = GetPlayerId(p)*OFFSET+GetHandleId(field)
     set VALUE[id] = value
-    set EASE[id] = value
+    set EASE[id] = ease
     set FIX[id] = true
 endfunction
 //------------------------------------------------------------------------------
