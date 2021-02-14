@@ -82,9 +82,6 @@ function FixCamResetField takes player p, camerafield field returns nothing
     if p == null then
         return
     endif
-    if field == null then
-        return
-    endif
     /*실행*/
     set id = GetPlayerId(p)*OFFSET+GetHandleId(field)
     set FIX[id] = false
@@ -212,9 +209,6 @@ function FixCamSetField takes player p, camerafield field, real value returns no
     if p == null then
         return
     endif
-    if field == null then
-        return
-    endif
     /*실행*/
     set id = GetPlayerId(p)*OFFSET+GetHandleId(field)
     set VALUE[id] = value
@@ -225,9 +219,6 @@ function FixCamSetFieldEx takes player p, camerafield field, real value, real ea
     local integer id
     /*인자 유효성 검사*/
     if p == null then
-        return
-    endif
-    if field == null then
         return
     endif
     /*실행*/
