@@ -8,7 +8,7 @@ library FixCam initializer main
 //
 // 픽스캠 라이브러리는 사용자가 무슨 난리를 쳐도, 제작자가 설정한 카메라 옵션을 변경하지 못하도록
 // '고정'할 수 있습니다.
-//------------------------------------------------------------------------------
+//··············································································
 //
 // [카메라 고정 액션]
 // 픽스캠 - (플레이어)의 카메라를 (카메라 개체)에 고정합니다. [화면 이동 (가능/불가능)]
@@ -40,7 +40,7 @@ globals
     //
     private constant real SYSTEM_TIMEOUT = 0.03125 /*카메라 고정 간격*/
 endglobals
-//------------------------------------------------------------------------------
+//··············································································
 globals
     private constant integer OFFSET = 20
     
@@ -100,7 +100,7 @@ function FixCamResetPosition takes player p returns nothing
     set EASE[id+10] = 0.0
     //set EASE[id+11] = 0.0
 endfunction
-//------------------------------------------------------------------------------
+//··············································································
 function FixCamSetEase takes player p, real ease returns nothing
     local integer id
     /*인자 유효성 검사*/
@@ -119,7 +119,7 @@ function FixCamSetEase takes player p, real ease returns nothing
     set EASE[id+10] = ease /*CAMERA_X*/
     //set EASE[id+11] = ease /*CAMERA_Y*/
 endfunction
-//------------------------------------------------------------------------------
+//··············································································
 function FixCamSetup takes player p, camerasetup cam, boolean pan returns nothing
     local integer id
     /*인자 유효성 검사*/
@@ -202,7 +202,7 @@ function FixCamSetupEx takes player p, camerasetup cam, boolean pan, real ease r
         //set FIX[id+11] = true /*CAMERA_Y*/
     endif
 endfunction
-//------------------------------------------------------------------------------
+//··············································································
 function FixCamSetField takes player p, camerafield field, real value returns nothing
     local integer id
     /*인자 유효성 검사*/
@@ -227,7 +227,7 @@ function FixCamSetFieldEx takes player p, camerafield field, real value, real ea
     set EASE[id] = ease
     set FIX[id] = true
 endfunction
-//------------------------------------------------------------------------------
+//··············································································
 function FixCamSetPosition takes player p, real x, real y returns nothing
     local integer id
     /*인자 유효성 검사*/
@@ -286,7 +286,7 @@ private function AtEnterFrame takes nothing returns nothing
         call PanCameraToTimed(VALUE[id+10],VALUE[id+11],EASE[id+10])
     endif
 endfunction
-//------------------------------------------------------------------------------
+//··············································································
 private function main takes nothing returns nothing
     local trigger t = CreateTrigger()
     call TriggerAddAction(t,function AtEnterFrame)
