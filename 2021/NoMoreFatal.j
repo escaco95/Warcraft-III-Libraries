@@ -1,7 +1,11 @@
 library NoMoreFatal initializer main
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 극한의 누수체크 라이브러리 21.02.21
+//
 // 페이탈은 이제 NAVER...
 // 뭐 하나 만들기 전에, 반드시 핸들값 증가폭을 체크하는 습관을 들여야 합니다.
+//
+// CheckHandle
 //
 // CreateTimerSafe
 // CreateGroupSafe
