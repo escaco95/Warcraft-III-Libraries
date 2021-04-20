@@ -2,33 +2,35 @@
  * CFX Library
  *
  * Copyright (c) 2021 escaco95@naver.com
- * Distributed under the BSD License, Version 210410.0
+ * Distributed under the BSD License, Version 210421.0
+ *
+ * [210421.0] 미사용 변수 1개 제거, this.Stop()이후 this.Start()가 가능한 취약점 경고 알림.(DEBUG MODE)
  */
 library CFX
 globals
-constant real CFX_TIMEOUT = 0.03125
 constant real CFX_GCTIMEOUT = 2.5
 hashtable CFX_TABLE = InitHashtable()
 endglobals
 endlibrary
 /**
- * CFX struct
- *
- * [Supports]
- *  - local thistype this = thistype.Create()
- *  - call this.Start()
- *  - call this.Stop()
- *  - local boolean exists = this.Exists
- *  - local integer timerHandle = this.Handle
- *  - local real elapsed = this.Elapsed
- *  - local real timeout = this.Timeout
- *  - local integer stage = this.Stage
- *  - private method OnCreate takes nothing returns nothing
- *  - private method OnStop takes nothing returns nothing
- *  - private method OnStart takes nothing returns nothing
- *  - private method OnInvalidate takes nothing returns nothing
- *  - private method OnTick takes nothing returns nothing
- */
+    * CFX struct
+    *
+    * [Supports]
+    *  - local thistype fx = thistype.Create()
+    *  - local thistype fx = thistype.New
+    *  - call this.Start()
+    *  - call this.Stop()
+    *  - local boolean exists = this.Exists
+    *  - local integer timerHandle = this.Handle
+    *  - local real elapsed = this.Elapsed
+    *  - local real timeout = this.Timeout
+    *  - local integer stage = this.Stage
+    *  - private method OnCreate takes nothing returns nothing
+    *  - private method OnStop takes nothing returns nothing
+    *  - private method OnStart takes nothing returns nothing
+    *  - private method OnInvalidate takes nothing returns nothing
+    *  - private method OnTick takes nothing returns nothing
+    */
 //! textmacro CFX takes TIMEOUT
 /*================================================================================================*/
 static method create takes nothing returns thistype
@@ -123,6 +125,10 @@ method Stop takes nothing returns nothing
     call TimerStart(this.CFXtimer,CFX_GCTIMEOUT,false,function thistype.CFXAtDestroy)
 endmethod
 method Start takes nothing returns nothing
+    if not this.CFXexists then
+        debug call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"[WARN] thistype CFX 중단된 개체에 대한 Start 시도됨!")
+        return
+    endif
     static if thistype.OnStart.exists then
         call this.OnStart()
     endif
