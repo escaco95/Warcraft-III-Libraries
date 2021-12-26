@@ -1,0 +1,96 @@
+/*
+    궁극의 중첩회피 문자열 해싱 라이브러리
+    
+    
+    적용 포인트:
+    
+        - 너무 많은 StringHash를 사용해서
+          운 나쁘게 해시가 겹치는 바람에 박살난 케이스
+        
+        - 앗! 두 고객의 ID StringHash가 동일해서 혜택/상품 시스템을 통으로 고쳐야 할 것 같아!
+          ㅠㅜ...
+        
+        
+    적용 방법:
+    
+        - 문제가 되는 시스템(또는 전 맵의)의 StringHash 함수를 UniqueHash 함수로 치환합니다.
+        
+        
+    리스크:
+        
+        - 원시 함수(native)가 아니기 때문에, globals 안에서 사용할 수 없습니다.
+        
+        - 이 세상 모든 종류의 문자열의 경우의 수를 모두 해싱할 수는 없습니다.
+          결국 integer로 변환하는 이상 42억개라는 제한이 생기며, 이는 해결할 수 없습니다.
+        
+        - 안 겹치는 해시 값을 찾을 때까지 '점프' 합니다.
+          운이 정말 나쁘거나 너무 많은 문자열 종류를 해싱해서 테이블이 차 버린 경우,
+          수없이 점프하다가 oplimit을 만나 해싱에 실패할 가능성이 존재합니다.
+          
+          
+    리스크 대응 방안:
+    
+        - 정말 어쩔 수 없는 경우를 제외하고, 대부분의 해시를 UniqueHash로 돌리고
+          globals 내에서 StringHash 를 호출하는 것을 자제합니다.
+          
+        - StringHash를 42억 종 이상 사용하지 않도록 합니다.
+          리스크 중에서도 가장 하급의 리스크입니다. 현실화되기 전에 워크가 먼저 뻗게 될.
+          
+        - 이건 위의 리스크보다는 가능성이 (조금 더) 높습니다.
+          그래서 UniqueHash 는 해싱 성공/실패 모니터링용 메트릭 기능을 제공합니다.
+          
+          local integer 해싱시도횟수 = UniqueHashGetTries( )
+          local integer 해싱성공횟수 = UniqueHashGetDones( )
+          local integer 해싱실패횟수 = UniqueHashGetFails( )
+          
+          위 세 가지 지표를 일정 시간 간격으로 모니터링하여, 문자열/사용량 등을 조절할 수 있습니다.
+          
+*/
+library StringHashUnique
+    
+    globals
+        private hashtable UNIQUE_TABLE = InitHashtable()
+        private string ARG_S
+        private integer RET_I
+        
+        private integer TRY = 0
+        private integer DONE = 0
+    endglobals
+    
+    private function SHU takes nothing returns nothing
+        local integer hash = StringHash(ARG_S)
+        local integer jump = 1
+        set TRY = TRY + 1
+        loop
+            exitwhen LoadStr(UNIQUE_TABLE,0,hash) == ARG_S
+            if not HaveSavedString(UNIQUE_TABLE,0,hash) then
+                call SaveStr(UNIQUE_TABLE,0,hash,ARG_S)
+                exitwhen true
+            else
+                set hash = hash + jump
+                set jump = jump + 2
+            endif
+        endloop
+        set RET_I = hash
+        set DONE = DONE + 1
+    endfunction
+    
+    function UniqueHash takes string s returns integer
+        set ARG_S = s
+        set RET_I = 0
+        call ForForce(bj_FORCE_PLAYER[0],function SHU)
+        return RET_I
+    endfunction
+    
+    
+    function UniqueHashGetTries takes nothing returns integer
+        return TRY
+    endfunction
+    function UniqueHashGetDones takes nothing returns integer
+        return DONE
+    endfunction
+    function UniqueHashGetFails takes nothing returns integer
+        return TRY - DONE
+    endfunction
+    
+endlibrary
