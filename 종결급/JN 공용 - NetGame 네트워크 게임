@@ -1,0 +1,832 @@
+/*
+    <NetGame>
+        by 최선웅(동동주)
+
+    JN 네트워크 기반 게임플레이 환경의 바탕이 되는 라이브러리입니다.
+    
+    아래와 같은 기능을 포함하고 있습니다.
+    
+        1. 디버그용 내부 로그 표시 기능
+        2. 테스트용 오프라인 모드 활성화 기능
+        3. 사고 방지 기능 (버전과 맞지 않는 세팅 등을 자체적으로 탐지)
+        
+    문의는 escaco95@naver.com 이메일로 연락 바랍니다.
+    
+    
+    ========================================================================
+    [API 상단 모음집]
+    ------------------------------------------------------------------------
+    
+    네트워크 초기화
+        call NetGameInit( force initPlayers )
+    
+    특정 플레이어 저장
+        if NetGameSave( player user ) then
+            // 저장 성공!
+        else
+            // 저장 실패!
+        endif
+    
+    플레이어 전역 DB 값 가져오기 / 설정하기
+        local integer value = NetGameGetUserInt( player user, string field )
+        local string value = NetGameGetUserStr( player user, string field )
+        local real value = NetGameGetUserReal( player user, string field )
+        local boolean value = NetGameGetUserBool( player user, string field )
+        call NetGameSetUserInt( player user, string field, integer value )
+        call NetGameSetUserStr( player user, string field, string value )
+        call NetGameSetUserReal( player user, string field, real value )
+        call NetGameSetUserBool( player user, string field, boolean value )
+        
+    플레이어 슬롯 DB 값 가져오기 / 설정하기
+        local integer value = NetGameGetUserSlotInt( player user, integer slot, string field )
+        local string value = NetGameGetUserSlotStr( player user, integer slot, string field )
+        local real value = NetGameGetUserSlotReal( player user, integer slot, string field )
+        local boolean value = NetGameGetUserSlotBool( player user, integer slot, string field )
+        call NetGameSetUserSlotInt( player user, integer slot, string field, integer value )
+        call NetGameSetUserSlotStr( player user, integer slot, string field, string value )
+        call NetGameSetUserSlotReal( player user, integer slot, string field, real value )
+        call NetGameSetUserSlotBool( player user, integer slot, string field, boolean value )
+    
+    이벤트 - 신규 플레이어가 게임에 접속
+        call NetGameTriggerRegisterNewPlayerEvent( code c )
+    
+    이벤트 - 저장 이력이 있는 플레이어가 게임에 접속
+        call NetGameTriggerRegisterOldPlayerEvent( integer netgameVersion, code c )
+    
+    이벤트 - 저장 직전 데이터 세팅 시점에 발동
+        call NetGameTriggerRegisterSavePlayerEvent( code c )
+        
+    이벤트 대응 - 접속한/저장 중인 플레이어
+        local player p = NetGameGetTriggerPlayer()
+    
+    이벤트 대응 - 접속한/저장 중인 플레이어의 원본 닉네임(ID)
+        local string playerName = NetGameGetTriggerPlayerId()
+    
+    이벤트 대응 - 접속한/저장 중인 넷게임 버전
+        local integer ver = NetGameGetTriggerVersion()
+        
+    ========================================================================
+*/
+library NetGame initializer OnMapLoad
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ [커스텀 가능] Configs
+    └───────────────────────────────────────────────────────────────────────────
+        사용자 입맛대로 자유롭게 언제든지 수정할 수 있는 설정들입니다.
+*/
+    globals
+        /*
+            AUTO_INITIALIZE
+            설정 - 게임 시작 시 자동으로 네트워크에 연결합니다
+            
+            [true]
+                게임 시작 이후 0.5초 뒤에 자동으로 가능한 모든 플레이어를 네트워크에 연결합니다.
+            [false]
+                제작자가 원하는 시점에 네트워크에 연결하고 싶은 경우, 이 옵션을 선택하세요.
+                원하는 시점에 call NetGameInit( ~ ) 함수를 호출하면 됩니다.
+        */
+        private constant boolean AUTO_INITIALIZE = true
+        
+        /*
+            SHOW_INTERNAL_LOGS
+            설정 - 시스템 내부 로그를 표시합니다
+            
+            [true]
+                NetGame 내부에서 어떤 일이 벌어지는지 설명하는 텍스트를 출력합니다.
+                실행 성능에 다소의 영향을 줄 수 있으며, 플레이 경험을 해치기 때문에
+                디버깅 과정에서만 선택하세요.
+            [false]
+                잡다한 디버깅용 텍스트를 모두 숨깁니다.
+                유저에게 배포하는 버전에서 선택해주세요.
+        */
+        private constant boolean SHOW_INTERNAL_LOGS = true
+        
+        /*
+            OFFLINE_ENABLED
+            설정 - 오프라인 플레이를 허가합니다
+            
+            [true]
+                싱글 플레이 또는 LAN 플레이 시에, 게임 진행을 허용합니다.
+                단, 네트워크 연결에 실패한 플레이어는 신규 유저로 취급하며.
+                세이브는 true 판정이 발생하나 실제로 서버에 데이터가 올라가지는 않습니다.
+                개발 중 M16에 접속하기 귀찮을 때 사용하세요.
+            [false]
+                네트워크 연결에 실패한 경우 게임 진행을 멈춰버립니다.
+                유저 입장에서는 다소 매끄럽지 못한 경험일 수 있으나,
+                예기치 못한 취약점에 대응하기 위해서는 이 옵션을 추천합니다.
+        */
+        private constant boolean OFFLINE_ENABLED = true
+        
+    endglobals
+    
+    /*
+        GameKey
+        크레덴셜 - 네트워크용 게임 키를 설정할 수 있습니다
+        
+        NetGame은 지원 가능한 버전의 구분을 이원화하여 관리합니다.
+        올바른 세이브 데이터인지를 검증하기 위해, GameKey()와 GameVersion()을 모두 사용합니다. 
+        
+        둘 중 하나라도 지원하지 않는다면, 기존 데이터를 무효화하고 신규 유저로 취급하게 됩니다!
+    */
+    private function GameKey takes nothing returns string
+        return "key.is9.demorpg"
+    endfunction
+    
+    /*
+        GameVersion
+        크레덴셜 - 현재 저장소 버전을 설정할 수 있습니다
+        
+        최신 세이브 코드인지의 여부를 이 값으로 판단합니다.
+    */
+    private function GameVersion takes nothing returns integer
+        return 21121901
+    endfunction
+    
+    /*크레덴셜 - 관리 ID를 얻는 방식을 설정할 수 있습니다*/
+    private function MapId takes nothing returns string
+        return "escacoIS9Test"
+    endfunction
+    
+    /*크레덴셜 - 시크릿 키를 얻는 방식을 설정할 수 있습니다*/
+    private function Secret takes nothing returns string
+        return "15397b8d-3f45-475e-b7b4-e0969e8a1d0b"
+    endfunction
+    
+    /*크레덴셜 - 유저의 ID를 얻는 방식을 설정할 수 있습니다*/
+    private function UserId takes player p returns string
+        return GetPlayerName(p)
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Internal Natives
+    └───────────────────────────────────────────────────────────────────────────
+        시스템이 올바르게 동작하기 위해 내부적으로 사용하는 JN Native 선언부입니다.
+*/
+    native JNUse takes nothing returns boolean
+    native JNObjectUserInit takes string mapId, string userId, string secret, string character returns integer
+    native JNObjectUserGetInt takes string userId, string field returns integer
+    native JNObjectUserGetBoolean takes string userId, string field returns boolean
+    native JNObjectUserGetReal takes string userId, string field returns real
+    native JNObjectUserGetString takes string userId, string field returns string
+    native JNObjectUserSetInt takes string userId, string field, integer value returns nothing
+    native JNObjectUserSetBoolean takes string userId, string field, boolean value returns nothing
+    native JNObjectUserSetReal takes string userId, string field, real value returns nothing
+    native JNObjectUserSetString takes string userId, string field, string value returns nothing
+    native JNObjectUserSave takes string mapId, string userId, string secret, string character returns string
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Module - System State
+    └───────────────────────────────────────────────────────────────────────────
+        시스템 상태를 나타낼 수 있는 기능을 표시합니다.
+*/
+    globals
+        private boolean SYSTEM_ENABLE = false
+        private boolean SYSTEM_ONLINE = false
+    endglobals
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Module - User State
+    └───────────────────────────────────────────────────────────────────────────
+        사용자 상태를 나타낼 수 있는 기능을 표시합니다.
+*/
+    globals
+        private boolean array USER_ONLINE
+        private string  array USER_ID
+    endglobals
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Module - Log
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    private function LogTrace takes string s returns nothing
+        call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"|cFF808080[TRACE] "+s+"|r")
+    endfunction
+    private function LogWarn takes string s returns nothing
+        call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"|cFFFFFF00[WARN] "+s+"|r")
+    endfunction
+    private function LogError takes string s returns nothing
+        call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"|cFFFF0000[ERROR] "+s+"|r")
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Offline Traces
+    └───────────────────────────────────────────────────────────────────────────
+        오프라인 상태에서 테스트가 가능하도록 우회하는 임시 저장소입니다.
+*/
+    globals
+        private hashtable OFFLINE_TABLE = InitHashtable()
+        private hashtable UNIQUE_TABLE = InitHashtable()
+    endglobals
+    
+    private function StringHashUnique takes string s returns integer
+        local integer hash = StringHash(s)
+        loop
+            exitwhen LoadStr(UNIQUE_TABLE,0,hash) == s
+            if not HaveSavedString(UNIQUE_TABLE,0,hash) then
+                call SaveStr(UNIQUE_TABLE,0,hash,s)
+                exitwhen true
+            else
+                set hash = hash + 1
+            endif
+        endloop
+        return hash
+    endfunction
+    
+    private function OfflineUserSetInt takes integer p, string field, integer value returns nothing
+        call LogTrace(I2S(p)+": "+field)
+        call SaveInteger(OFFLINE_TABLE,p,StringHashUnique(field),value)
+    endfunction
+    private function OfflineUserSetString takes integer p, string field, string value returns nothing
+        call LogTrace(I2S(p)+": "+field)
+        call SaveStr(OFFLINE_TABLE,p,StringHashUnique(field),value)
+    endfunction
+    private function OfflineUserSetReal takes integer p, string field, real value returns nothing
+        call LogTrace(I2S(p)+": "+field)
+        call SaveReal(OFFLINE_TABLE,p,StringHashUnique(field),value)
+    endfunction
+    private function OfflineUserSetBoolean takes integer p, string field, boolean value returns nothing
+        call LogTrace(I2S(p)+": "+field)
+        call SaveBoolean(OFFLINE_TABLE,p,StringHashUnique(field),value)
+    endfunction
+    private function OfflineUserGetInt takes integer p, string field returns integer
+        call LogTrace(I2S(p)+": "+field)
+        return LoadInteger(OFFLINE_TABLE,p,StringHashUnique(field))
+    endfunction
+    private function OfflineUserGetString takes integer p, string field returns string
+        call LogTrace(I2S(p)+": "+field)
+        return LoadStr(OFFLINE_TABLE,p,StringHashUnique(field))
+    endfunction
+    private function OfflineUserGetReal takes integer p, string field returns real
+        call LogTrace(I2S(p)+": "+field)
+        return LoadReal(OFFLINE_TABLE,p,StringHashUnique(field))
+    endfunction
+    private function OfflineUserGetBoolean takes integer p, string field returns boolean
+        call LogTrace(I2S(p)+": "+field)
+        return LoadBoolean(OFFLINE_TABLE,p,StringHashUnique(field))
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Module - Custom Events
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    globals
+        private hashtable   TRIG_TABLE      = InitHashtable()
+        private key         TRIG_USER_OLD_KEY
+        private trigger     TRIG_USER_NEW   = CreateTrigger()
+        private trigger     TRIG_USER_SAVE  = CreateTrigger()
+        
+        private player  IEVENT_USER     = null
+        private string  IEVENT_USER_ID  = null
+        private integer IEVENT_VERSION  = 0
+    endglobals
+    private function IEventRegister takes hashtable table, integer k1, integer k2, code c returns triggercondition
+        if not HaveSavedHandle(table,k1,k2) then
+            call SaveTriggerHandle(table,k1,k2,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(table,k1,k2),Condition(c))
+    endfunction
+    private function IEventFire takes trigger trig, player user, integer ver returns boolean
+        local player pp     = IEVENT_USER
+        local string ps     = IEVENT_USER_ID
+        local integer pv    = IEVENT_VERSION
+        local boolean result
+        
+        set IEVENT_USER     = user
+        set IEVENT_USER_ID  = USER_ID[GetPlayerId(user)]
+        set IEVENT_VERSION  = ver
+        set result          = TriggerEvaluate(trig)
+        set IEVENT_USER     = pp
+        set IEVENT_USER_ID  = ps
+        set IEVENT_VERSION  = pv
+        
+        set pp = null
+        return result
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Module - User Validation
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    globals
+        private constant string FIELD_NETGAME_KEY       = ".netgame.key"
+        private constant string FIELD_NETGAME_VERSION   = ".netgame.version"
+    endglobals
+    
+    private function IsPlayerDBAccessible takes player p returns boolean
+static if OFFLINE_ENABLED then
+        return p != null
+else
+        return SYSTEM_ONLINE and p != null and USER_ONLINE[GetPlayerId(p)]
+endif
+        endfunction
+    
+    private function ValidateUser takes player p, string userId returns nothing
+        local string    netgameKey          = JNObjectUserGetString(userId,FIELD_NETGAME_KEY)
+        local integer   netgameVersion      = JNObjectUserGetInt(userId,FIELD_NETGAME_VERSION)
+        local boolean   keyIsInvalid        = netgameKey != GameKey()
+        local boolean   versionIsInvalid    = not HaveSavedHandle(TRIG_TABLE,TRIG_USER_OLD_KEY,netgameVersion)
+        
+static if SHOW_INTERNAL_LOGS then
+        call LogTrace("플레이어 "+I2S(GetConvertedPlayerId(p))+" 키: "+netgameKey)
+        call LogTrace("플레이어 "+I2S(GetConvertedPlayerId(p))+" 버전: "+I2S(netgameVersion))
+        if keyIsInvalid then
+            call LogWarn("플레이어 "+I2S(GetConvertedPlayerId(p))+" 게임키가 일치하지 않습니다!")
+        elseif versionIsInvalid then
+            call LogWarn("플레이어 "+I2S(GetConvertedPlayerId(p))+" 의 게임 버전을 지원하지 않습니다!")
+        endif
+endif
+        
+        if keyIsInvalid or versionIsInvalid then
+static if SHOW_INTERNAL_LOGS then
+            call LogTrace("플레이어 "+I2S(GetConvertedPlayerId(p))+": 신규 유저")
+endif
+            call IEventFire(TRIG_USER_NEW,p,GameVersion())
+        else
+static if SHOW_INTERNAL_LOGS then
+            call LogTrace("플레이어 "+I2S(GetConvertedPlayerId(p))+": 기존 유저 from "+I2S(netgameVersion))
+endif
+            call IEventFire(LoadTriggerHandle(TRIG_TABLE,TRIG_USER_OLD_KEY,netgameVersion),p,netgameVersion)
+        endif
+    endfunction
+    
+    private function ValidateUserUpload takes player p returns boolean
+        local string userId = USER_ID[GetPlayerId(p)]
+        
+        call IEventFire(TRIG_USER_SAVE,p,GameVersion())
+        
+        call JNObjectUserSetString(userId,FIELD_NETGAME_KEY,GameKey())
+        call JNObjectUserSetInt(userId,FIELD_NETGAME_VERSION,GameVersion())
+        
+        return JNObjectUserSave(MapId(),userId,Secret(),"ANY") == "저장이 성공적으로 되었습니다."
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Module - Connections
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    private function TryConnectUser takes player p, string userId returns boolean
+        local integer result
+        set result = JNObjectUserInit(MapId(),userId,Secret(),"ANY")
+static if SHOW_INTERNAL_LOGS then
+        call LogTrace("JNObject 연결 결과: "+I2S(result))
+endif
+static if OFFLINE_ENABLED then
+        if not (result == 0 or result == -1) then
+            return false
+        endif
+else
+        if result != 0 then
+            return false
+        endif
+endif
+static if SHOW_INTERNAL_LOGS then
+        if not SYSTEM_ONLINE then
+            call LogWarn("오프라인 모드이므로 가짜 연결을 형성합니다.")
+        endif
+endif
+        set USER_ONLINE[GetPlayerId(p)] = true
+        set USER_ID[GetPlayerId(p)] = userId
+        return true
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ Module - Initializer
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    globals
+        private boolean InitFlag    = false
+    
+        private force InitPlayers   = null
+        private timer InitTimer     = CreateTimer()
+        
+        private integer InitIndex   = 0
+    endglobals
+    
+    private function InitLoadUserCallback takes nothing returns nothing
+        if InitIndex >= bj_MAX_PLAYERS then
+            set InitIndex = 0
+static if SHOW_INTERNAL_LOGS then
+            call LogTrace("모든 사용자 네트워크 세팅 완료!")
+endif
+        else
+            if InitPlayers == null or IsPlayerInForce(Player(InitIndex),InitPlayers) then
+                if USER_ONLINE[GetPlayerId(Player(InitIndex))] then
+                    call ValidateUser( Player(InitIndex), USER_ID[InitIndex] )
+                endif
+            endif
+            set InitIndex = InitIndex + 1
+            call TimerStart(InitTimer,0.2,false,function InitLoadUserCallback)
+        endif
+    endfunction
+    
+    private function InitRunUserCallback takes nothing returns nothing
+        local boolean isPlayerInitRequired
+        if InitIndex >= bj_MAX_PLAYERS then
+            set InitIndex = 0
+            call TimerStart(InitTimer,1.0,false,function InitLoadUserCallback)
+static if SHOW_INTERNAL_LOGS then
+            call LogTrace("모든 플레이어 연결 처리 마침")
+endif
+        else
+            set isPlayerInitRequired = (InitPlayers == null or IsPlayerInForce(Player(InitIndex),InitPlayers)) /*
+                */ and GetPlayerController(Player(InitIndex)) == MAP_CONTROL_USER /*
+                */ and GetPlayerSlotState(Player(InitIndex)) == PLAYER_SLOT_STATE_PLAYING
+            if isPlayerInitRequired then
+static if SHOW_INTERNAL_LOGS then
+                call LogTrace("플레이어 "+I2S(InitIndex+1)+"("+GetPlayerName(Player(InitIndex))+") 네트워크 연결 시도")
+endif
+                if not TryConnectUser(Player(InitIndex),UserId(Player(InitIndex))) then
+static if SHOW_INTERNAL_LOGS then
+                    call LogError("플레이어 "+I2S(InitIndex+1)+"("+GetPlayerName(Player(InitIndex))+") 네트워크 연결 실패!")
+endif
+                    return
+                endif
+            else
+static if SHOW_INTERNAL_LOGS then
+                call LogWarn("플레이어 "+I2S(InitIndex+1)+"("+GetPlayerName(Player(InitIndex))+") 네트워크 연결 대상 아님")
+endif
+            endif
+            set InitIndex = InitIndex + 1
+            call TimerStart(InitTimer,0.2,false,function InitRunUserCallback)
+        endif
+    endfunction
+    
+    private function InitRunCallback takes nothing returns nothing
+static if SHOW_INTERNAL_LOGS then
+            call LogTrace("JN 연결 시도 중...")
+endif
+        set SYSTEM_ONLINE = JNUse()
+        set SYSTEM_ENABLE = SYSTEM_ONLINE
+static if OFFLINE_ENABLED then
+        set SYSTEM_ENABLE = true
+endif
+        if SYSTEM_ENABLE then
+            set InitIndex = 0
+            call TimerStart(InitTimer,1.0,false,function InitRunUserCallback)
+static if SHOW_INTERNAL_LOGS then
+            if SYSTEM_ONLINE then
+                call LogTrace("JN 사용 가능!")
+            else
+                call LogError("JN 사용 불가!")
+                call LogWarn("오프라인 모드로 기동합니다.")
+            endif
+endif
+        else
+static if SHOW_INTERNAL_LOGS then
+            call LogError("JN 사용 불가!")
+            call LogError("오프라인 모드를 허용하지 않아 게임을 중단합니다.")
+endif
+        endif
+    endfunction
+    
+    private function InitRunTimer takes force f returns nothing
+        if not InitFlag then
+            set InitFlag = true
+            set InitPlayers = f
+            call TimerStart(InitTimer,0.5,false,function InitRunCallback)
+        else
+static if SHOW_INTERNAL_LOGS then
+            call LogWarn("이미 네트워크 초기화를 시도했습니다.")
+endif
+        endif
+    endfunction
+    
+    private function OnMapLoad takes nothing returns nothing
+static if SHOW_INTERNAL_LOGS then
+        call LogTrace(SCOPE_PREFIX+" 로드 중...")
+endif
+static if AUTO_INITIALIZE and SHOW_INTERNAL_LOGS then
+        call LogTrace(SCOPE_PREFIX+" 자동 초기화")
+endif
+static if AUTO_INITIALIZE then
+        call InitRunTimer(null)
+endif
+static if SHOW_INTERNAL_LOGS then
+        call LogTrace(SCOPE_PREFIX+" 로드 됨!")
+endif
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ API - NetGame 초기화
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    /*
+        NetGame - 네트워크에 연결하여 게임을 시작합니다
+        
+            initPlayers: 네트워크에 연결할 플레이어'들' (null = 모든 플레이어)
+            
+        네트워크에 연결하여 게임을 시작합니다.
+        위에 설명한 내용처럼, 맵 실행 후 단 한번 호출하도록 설계되었으므로...
+        여러 번 호출해도 한 번만 동작하며 디버그 메시지를 켰을 경우 경고 문구가 표시됩니다.
+    */
+    function NetGameInit takes force initPlayers returns nothing
+        call InitRunTimer(initPlayers)
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ API - NetGame 저장
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    /*
+        NetGame - 지정한 플레이어를 저장합니다
+        
+            user: 저장할 단일 플레이어
+            
+            >> true: 저장에 성공했습니다
+            >> false: 저장에 실패했습니다
+            
+        지정한 플레이어의 정보를 DB로 전송하도록 지시합니다.
+        null을 대상으로 실행되었거나, 시스템이 비활성 상태인 경우 저장을 시작하지 않습니다.
+        
+        저장을 시작하지 못했거나, 저장 과정에서 실패한 경우 'false'를 반환합니다.
+        오프라인 모드일 경우 'true'를 반환하나, 실제로 DB에 저장하지 않습니다.
+    */
+    function NetGameSave takes player user returns boolean
+        if not SYSTEM_ENABLE then
+static if SHOW_INTERNAL_LOGS then
+            call LogError("네트워크 기능을 사용할 수 없어 저장에 실패하였습니다.")
+endif
+            return false
+        elseif not SYSTEM_ONLINE then
+static if SHOW_INTERNAL_LOGS then
+            call LogWarn("오프라인 모드이므로 저장이 무시되었습니다.")
+endif
+            return true
+        endif
+        return ValidateUserUpload(user)
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ API - NetGame User 데이터 Get/Set
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    globals
+        private constant string FIELD_NETGAME_USER = ".netgame.user."
+    endglobals
+    
+    function NetGameGetUserInt takes player p, string field returns integer
+        if not IsPlayerDBAccessible(p) then
+            return 0
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            return JNObjectUserGetInt(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field)
+        else
+            return OfflineUserGetInt(GetPlayerId(p),FIELD_NETGAME_USER+field)
+        endif
+else
+        return JNObjectUserGetInt(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field)
+endif
+    endfunction
+    function NetGameGetUserStr takes player p, string field returns string
+        if not IsPlayerDBAccessible(p) then
+            return null
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            return JNObjectUserGetString(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field)
+        else
+            return OfflineUserGetString(GetPlayerId(p),FIELD_NETGAME_USER+field)
+        endif
+else
+        return JNObjectUserGetString(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field)
+endif
+    endfunction
+    function NetGameGetUserReal takes player p, string field returns real
+        if not IsPlayerDBAccessible(p) then
+            return 0.0
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            return JNObjectUserGetReal(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field)
+        else
+            return OfflineUserGetReal(GetPlayerId(p),FIELD_NETGAME_USER+field)
+        endif
+else
+        return JNObjectUserGetReal(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field)
+endif
+    endfunction
+    function NetGameGetUserBool takes player p, string field returns boolean
+        if not IsPlayerDBAccessible(p) then
+            return false
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            return JNObjectUserGetBoolean(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field)
+        else
+            return OfflineUserGetBoolean(GetPlayerId(p),FIELD_NETGAME_USER+field)
+        endif
+else
+        return JNObjectUserGetBoolean(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field)
+endif
+    endfunction
+    
+    function NetGameSetUserInt takes player p, string field, integer value returns nothing
+        if not IsPlayerDBAccessible(p) then
+            return
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            call JNObjectUserSetInt(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field,value)
+        else
+            call OfflineUserSetInt(GetPlayerId(p),FIELD_NETGAME_USER+field,value)
+        endif
+else
+        call JNObjectUserSetInt(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field,value)
+endif
+    endfunction
+    function NetGameSetUserStr takes player p, string field, string value returns nothing
+        if not IsPlayerDBAccessible(p) then
+            return
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            call JNObjectUserSetString(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field,value)
+        else
+            call OfflineUserSetString(GetPlayerId(p),FIELD_NETGAME_USER+field,value)
+        endif
+else
+        call JNObjectUserSetString(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field,value)
+endif
+    endfunction
+    function NetGameSetUserReal takes player p, string field, real value returns nothing
+        if not IsPlayerDBAccessible(p) then
+            return
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            call JNObjectUserSetReal(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field,value)
+        else
+            call OfflineUserSetReal(GetPlayerId(p),FIELD_NETGAME_USER+field,value)
+        endif
+else
+        call JNObjectUserSetReal(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field,value)
+endif
+    endfunction
+    function NetGameSetUserBool takes player p, string field, boolean value returns nothing
+        if not IsPlayerDBAccessible(p) then
+            return
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            call JNObjectUserSetBoolean(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field,value)
+        else
+            call OfflineUserSetBoolean(GetPlayerId(p),FIELD_NETGAME_USER+field,value)
+        endif
+else
+        call JNObjectUserSetBoolean(USER_ID[GetPlayerId(p)],FIELD_NETGAME_USER+field,value)
+endif
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ API - NetGame UserSlot 데이터 Get/Set
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    globals
+        private constant string FIELD_NETGAME_SLOT = ".netgame.slot."
+    endglobals
+    
+    function NetGameGetUserSlotInt takes player p, integer slot, string field returns integer
+        if not IsPlayerDBAccessible(p) then
+            return 0
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            return JNObjectUserGetInt(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+        else
+            return OfflineUserGetInt(GetPlayerId(p),FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+        endif
+else
+        return JNObjectUserGetInt(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+endif
+    endfunction
+    function NetGameGetUserSlotStr takes player p, integer slot, string field returns string
+        if not IsPlayerDBAccessible(p) then
+            return null
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            return JNObjectUserGetString(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+        else
+            return OfflineUserGetString(GetPlayerId(p),FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+        endif
+else
+        return JNObjectUserGetString(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+endif
+    endfunction
+    function NetGameGetUserSlotReal takes player p, integer slot, string field returns real
+        if not IsPlayerDBAccessible(p) then
+            return 0.0
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            return JNObjectUserGetReal(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+        else
+            return OfflineUserGetReal(GetPlayerId(p),FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+        endif
+else
+        return JNObjectUserGetReal(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+endif
+    endfunction
+    function NetGameGetUserSlotBool takes player p, integer slot, string field returns boolean
+        if not IsPlayerDBAccessible(p) then
+            return false
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            return JNObjectUserGetBoolean(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+        else
+            return OfflineUserGetBoolean(GetPlayerId(p),FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+        endif
+else
+        return JNObjectUserGetBoolean(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field)
+endif
+    endfunction
+    
+    function NetGameSetUserSlotInt takes player p, integer slot, string field, integer value returns nothing
+        if not IsPlayerDBAccessible(p) then
+            return
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            call JNObjectUserSetInt(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+        else
+            call OfflineUserSetInt(GetPlayerId(p),FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+        endif
+else
+        call JNObjectUserSetInt(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+endif
+    endfunction
+    function NetGameSetUserSlotStr takes player p, integer slot, string field, string value returns nothing
+        if not IsPlayerDBAccessible(p) then
+            return
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            call JNObjectUserSetString(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+        else
+            call OfflineUserSetString(GetPlayerId(p),FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+        endif
+else
+        call JNObjectUserSetString(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+endif
+    endfunction
+    function NetGameSetUserSlotReal takes player p, integer slot, string field, real value returns nothing
+        if not IsPlayerDBAccessible(p) then
+            return
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            call JNObjectUserSetReal(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+        else
+            call OfflineUserSetReal(GetPlayerId(p),FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+        endif
+else
+        call JNObjectUserSetReal(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+endif
+    endfunction
+    function NetGameSetUserSlotBool takes player p, integer slot, string field, boolean value returns nothing
+        if not IsPlayerDBAccessible(p) then
+            return
+        endif
+static if OFFLINE_ENABLED then
+        if SYSTEM_ONLINE then
+            call JNObjectUserSetBoolean(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+        else
+            call OfflineUserSetBoolean(GetPlayerId(p),FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+        endif
+else
+        call JNObjectUserSetBoolean(USER_ID[GetPlayerId(p)],FIELD_NETGAME_SLOT+I2S(slot)+"."+field,value)
+endif
+    endfunction
+/*
+    ┌───────────────────────────────────────────────────────────────────────────
+    │ API - NetGame 트리거
+    └───────────────────────────────────────────────────────────────────────────
+*/
+    /*NetGame - 트리거를 작동시킨 플레이어*/
+    function NetGameGetTriggerPlayer takes nothing returns player
+        return IEVENT_USER
+    endfunction
+    /*NetGame - 트리거를 작동시킨 플레이어의 ID*/
+    function NetGameGetTriggerPlayerId takes nothing returns string
+        return IEVENT_USER_ID
+    endfunction
+    /*NetGame - 트리거를 작동시킨 버전*/
+    function NetGameGetTriggerVersion takes nothing returns integer
+        return IEVENT_VERSION
+    endfunction
+    
+    /*NetGame - 신규 플레이어 네트워크 연결됨 이벤트!*/
+    function NetGameTriggerRegisterNewPlayerEvent takes code c returns nothing
+        call TriggerAddCondition(TRIG_USER_NEW,Condition(c))
+    endfunction
+    /*NetGame - 기존 플레이어 네트워크 연결됨 이벤트!*/
+    function NetGameTriggerRegisterOldPlayerEvent takes integer ngVersion, code c returns nothing
+        call IEventRegister(TRIG_TABLE,TRIG_USER_OLD_KEY,ngVersion,c)
+    endfunction
+    /*NetGame - 네트워크 게임 저장 이벤트!*/
+    function NetGameTriggerRegisterSavePlayerEvent takes code c returns nothing
+        call TriggerAddCondition(TRIG_USER_SAVE,Condition(c))
+    endfunction
+endlibrary
