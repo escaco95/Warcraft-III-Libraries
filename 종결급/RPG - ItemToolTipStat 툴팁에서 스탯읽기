@@ -1,0 +1,52 @@
+//! import "JAPIItemState.j"
+library ItemToolTipStat requires JAPIItemState
+/*
+    ┌───────────────────────────────────────────────────────
+    │ Natives
+    └───────────────────────────────────────────────────────
+*/
+native JNStringRegex takes string str, string regex, integer index returns string
+/*
+    ┌───────────────────────────────────────────────────────
+    │ Privates
+    └───────────────────────────────────────────────────────
+*/
+private function FetchStat takes integer id, string stat, integer index returns string
+    local string ttip = JNGetItemExtendedTooltipById(id)
+    return JNStringRegex(ttip,"(?<=\\|cffFFFFFF"+stat+" )(.+)(?<!%)(?=\\|r)",index)
+endfunction
+private function FetchStatPercent takes integer id, string stat, integer index returns string
+    local string ttip = JNGetItemExtendedTooltipById(id)
+    return JNStringRegex(ttip,"(?<=\\|cffFFFFFF"+stat+" )(.+)(?=%\\|r)",index)
+endfunction
+/*
+    ┌───────────────────────────────────────────────────────
+    │ API - 단일 스탯 받아오기
+    └───────────────────────────────────────────────────────
+*/
+/* 아이템 툴팁 스탯 - 문자열 스탯을 받아옵니다.*/
+function ItemToolTipStatGetStr takes item t, string stat, integer index returns string
+    return FetchStat(GetItemTypeId(t),stat,index)
+endfunction
+/* 아이템 툴팁 스탯 - 정수 스탯을 받아옵니다. %가 붙어 있을 경우 실패하여 0을 반환합니다.*/
+function ItemToolTipStatGetInt takes item t, string stat, integer index returns integer
+    local string value = FetchStat(GetItemTypeId(t),stat,index)
+    return S2I(value)
+endfunction
+/* 아이템 툴팁 스탯 - 실수 스탯을 받아옵니다. %가 붙어 있을 경우 실패하여 0을 반환합니다.*/
+function ItemToolTipStatGetReal takes item t, string stat, integer index returns real
+    local string value = FetchStat(GetItemTypeId(t),stat,index)
+    return S2R(value)
+endfunction
+/* 아이템 툴팁 스탯 - 정수 스탯을 받아옵니다. %가 없을 경우 실패하여 0을 반환합니다.*/
+function ItemToolTipStatGetIntPercent takes item t, string stat, integer index returns integer
+    local string value = FetchStatPercent(GetItemTypeId(t),stat,index)
+    return S2I(value)
+endfunction
+/* 아이템 툴팁 스탯 - 실수 스탯을 받아옵니다. %가 없을 경우 실패하여 0을 반환합니다.*/
+function ItemToolTipStatGetRealPercent takes item t, string stat, integer index returns real
+    local string value = FetchStatPercent(GetItemTypeId(t),stat,index)
+    return S2R(value)
+endfunction
+
+endlibrary
