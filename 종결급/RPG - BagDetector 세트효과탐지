@@ -1,0 +1,301 @@
+/*
+    local bagdetector sd = BagDetectorCreate()
+    call BagDetectorSetTypeId(sd, 'HERO')
+    call BagDetectorSetOwner(sd, Player(0))
+    
+    
+    local bagdetector sd = BagDetectorCreateEx('HERO',Player(0))
+*/
+library BagDetector
+
+private function DebugIdInteger2IdString takes integer value returns string
+    local string charMap = ".................................!.#$%&'()*+,-./0123456789:;<=>.@ABCDEFGHIJKLMNOPQRSTUVWXYZ[.]^_`abcdefghijklmnopqrstuvwxyz{|}~................................................................................................................................."
+    local string result = ""
+    local integer remainingValue = value
+    local integer charValue
+    local integer byteno
+
+    set byteno = 0
+    loop
+        set charValue = ModuloInteger(remainingValue, 256)
+        set remainingValue = remainingValue / 256
+        set result = SubString(charMap, charValue, charValue + 1) + result
+
+        set byteno = byteno + 1
+        exitwhen byteno == 4
+    endloop
+    return result
+endfunction
+
+globals
+    private hashtable SET_TABLE = InitHashtable()
+endglobals
+
+function BagDetectorItemSet takes integer setId, integer itemId returns nothing
+    local integer count = LoadInteger(SET_TABLE,itemId,-1)
+    call SaveInteger(SET_TABLE,itemId,count,setId)
+    call SaveInteger(SET_TABLE,itemId,-1,count+1)
+endfunction
+
+/*Dummy variable type*/
+struct bagdetector extends array
+endstruct
+
+globals
+    private constant real DETECT_TIMEOUT = 0.5
+    
+    private hashtable TMR_TABLE = InitHashtable()
+    
+    private hashtable EV_TABLE = InitHashtable()
+    private constant integer EVENT_DETECT = -1
+    private constant integer EVENT_SETCHANGE = -100
+    
+    private hashtable SD_TABLE = InitHashtable()
+    private integer SD_INDEX = 1
+    
+    private constant integer PROP_SETOFFSET = 1000000
+    private constant integer PROP_SETCOUNT = -1
+    
+    private constant integer PROP_EXISTS = -30
+    private constant integer PROP_TYPEID = -31
+    private constant integer PROP_OWNER = -32
+    private constant integer PROP_TIMER = -100
+endglobals
+    
+/*EVENT INTERAL USAGE*/
+globals
+    private item P_ITEM = null
+    private bagdetector P_THIS = 0
+    
+    private hashtable P_TABLE = null
+    private hashtable P_PREVSET = null
+    private integer array P_SETLIST
+    private integer P_SETLISTSIZE = 0
+    
+    private integer P_SETID = 0
+    private integer P_PCS = 0
+    private integer P_NPCS = 0
+endglobals
+private function FireDetectEvent takes bagdetector bd returns boolean
+    local bagdetector pthis = P_THIS
+    local integer typeId = LoadInteger(SD_TABLE,bd,PROP_TYPEID)
+    local boolean result
+    
+    set P_THIS = bd
+    set result = TriggerEvaluate(LoadTriggerHandle(EV_TABLE,EVENT_DETECT,typeId))
+    set P_THIS = pthis
+    
+    return result
+endfunction
+private function FireSetChangeEvent takes bagdetector bd, integer setId, integer pcs, integer newPcs returns boolean
+    local bagdetector pthis = P_THIS
+    local boolean result
+    
+    set P_THIS = bd
+    set P_SETID = setId
+    set P_PCS = pcs
+    set P_NPCS = newPcs
+    set result = TriggerEvaluate(LoadTriggerHandle(EV_TABLE,EVENT_SETCHANGE,setId))
+    set P_THIS = pthis
+    
+    return result
+endfunction
+
+
+/*PRIVATES*/
+private function BagDetect takes nothing returns nothing
+    local bagdetector bd = LoadInteger(TMR_TABLE,GetHandleId(GetExpiredTimer()),0)
+    local integer i
+    local integer setId
+    local integer pcs
+    local integer newPcs
+    local integer prevSetListSize
+    set P_TABLE = InitHashtable()
+    set P_PREVSET = InitHashtable()
+    set P_SETLISTSIZE = 0
+    
+    call FireDetectEvent(bd)
+    
+    /* 기존 세트효과 카운트 비교 */
+    set prevSetListSize = LoadInteger(SD_TABLE,bd,PROP_SETCOUNT)
+    set i = 0
+    loop
+        exitwhen i == prevSetListSize
+        set setId = LoadInteger(SD_TABLE,bd,i)
+        set pcs = LoadInteger(SD_TABLE,bd,PROP_SETOFFSET+i)
+        call SaveInteger(P_PREVSET,setId,0,pcs)
+        set newPcs = LoadInteger(P_TABLE,setId,0)
+        if pcs != newPcs then
+            call FireSetChangeEvent(bd,setId,pcs,newPcs)
+            //call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"세트 카운트 변동: "+DebugIdInteger2IdString(setId)+", 변동전후 "+I2S(pcs)+" >> "+I2S(newPcs))
+        endif
+        set i = i + 1
+    endloop
+    
+    /* 현재 세트효과 카운트 반영 */
+    call SaveInteger(SD_TABLE,bd,PROP_SETCOUNT,P_SETLISTSIZE)
+    set i = 0
+    loop
+        exitwhen i == P_SETLISTSIZE
+        set setId = P_SETLIST[i]
+        set newPcs = LoadInteger(P_TABLE,setId,0)
+        if not HaveSavedInteger(P_PREVSET,setId,0) then
+            call FireSetChangeEvent(bd,setId,0,newPcs)
+            //call DisplayTextToPlayer(GetLocalPlayer(),0.0,0.0,"세트 카운트 생성: "+DebugIdInteger2IdString(setId)+", "+I2S(newPcs))
+        endif
+        call SaveInteger(SD_TABLE,bd,PROP_SETOFFSET+i,newPcs)
+        call SaveInteger(SD_TABLE,bd,i,setId)
+        set i = i + 1
+    endloop
+    
+    call FlushParentHashtable(P_PREVSET)
+    call FlushParentHashtable(P_TABLE)
+    set P_SETLISTSIZE = 0
+    set P_ITEM = null
+    set P_TABLE = null
+endfunction
+private function MergeItem takes nothing returns nothing
+    local item t = P_ITEM
+    local integer tid = GetItemTypeId(t)
+    local integer sets = LoadInteger(SET_TABLE,tid,-1)
+    local integer setId
+    local integer i = 0
+    /*내가 만들수 있는 세트 체크하기*/
+    loop
+        exitwhen i == sets
+        set setId = LoadInteger(SET_TABLE,tid,i)
+        if not HaveSavedHandle(P_TABLE,setId,tid) then
+            if not HaveSavedInteger(P_TABLE,setId,0) then
+                set P_SETLIST[P_SETLISTSIZE] = setId
+                set P_SETLISTSIZE = P_SETLISTSIZE + 1
+            endif
+            call SaveItemHandle(P_TABLE,setId,tid,t)
+            call SaveInteger(P_TABLE,setId,0,LoadInteger(P_TABLE,setId,0)+1)
+        endif
+        set i = i + 1
+    endloop
+    set t = null
+endfunction
+
+
+private function Alloc takes nothing returns bagdetector
+    local bagdetector lastCreated = SD_INDEX
+    local timer t = CreateTimer()
+    set SD_INDEX = SD_INDEX + 1
+    call SaveBoolean(SD_TABLE, lastCreated, PROP_EXISTS, true)
+    call SaveInteger(SD_TABLE, lastCreated, PROP_SETCOUNT, 0)
+    
+    call SaveTimerHandle(SD_TABLE, lastCreated, PROP_TIMER, t)
+    call SaveInteger(TMR_TABLE, GetHandleId(t), 0, lastCreated)
+    call TimerStart(t,DETECT_TIMEOUT,true,function BagDetect)
+    set t = null
+    return lastCreated
+endfunction
+private function Dealloc takes bagdetector sd returns nothing
+    call DestroyTimer(LoadTimerHandle(SD_TABLE,sd,PROP_TIMER))
+    call FlushChildHashtable(SD_TABLE,sd)
+endfunction
+
+
+
+/* API */
+function BagDetectorCreate takes nothing returns bagdetector
+    local bagdetector bd = Alloc()
+    return bd
+endfunction
+
+function BagDetectorDestroy takes bagdetector sd returns nothing
+    if not LoadBoolean(SD_TABLE, sd, PROP_EXISTS) then
+        return
+    endif
+    call Dealloc(sd)
+endfunction
+
+function BagDetectorSetTypeId takes bagdetector sd, integer typeId returns nothing
+    if not LoadBoolean(SD_TABLE, sd, PROP_EXISTS) then
+        return
+    endif
+    call SaveInteger(SD_TABLE, sd, PROP_TYPEID, typeId)
+endfunction
+function BagDetectorGetTypeId takes bagdetector sd returns integer
+    if not LoadBoolean(SD_TABLE, sd, PROP_EXISTS) then
+        return 0
+    endif
+    return LoadInteger(SD_TABLE, sd, PROP_TYPEID)
+endfunction
+function BagDetectorSetOwner takes bagdetector sd, player p returns nothing
+    if not LoadBoolean(SD_TABLE, sd, PROP_EXISTS) then
+        return
+    endif
+    call SavePlayerHandle(SD_TABLE, sd, PROP_OWNER, p)
+endfunction
+function BagDetectorGetOwner takes bagdetector sd returns player
+    if not LoadBoolean(SD_TABLE, sd, PROP_EXISTS) then
+        return null
+    endif
+    return LoadPlayerHandle(SD_TABLE, sd, PROP_OWNER)
+endfunction
+
+/* EVENT API */
+function BagDetectorGetEventBag takes nothing returns bagdetector
+    return P_THIS
+endfunction
+function BagDetectorGetEventSetId takes nothing returns integer
+    return P_SETID
+endfunction
+function BagDetectorGetEventSetCount takes nothing returns integer
+    return P_PCS
+endfunction
+function BagDetectorGetEventSetNewCount takes nothing returns integer
+    return P_NPCS
+endfunction
+function BagDetectorAddEventItem takes item t returns nothing
+    if GetItemTypeId(t) != 0 then
+        set P_ITEM = t
+        call ForForce(bj_FORCE_PLAYER[0],function MergeItem)
+    endif
+endfunction
+function BagDetectorRegisterDetectEvent takes integer typeId, code c returns triggercondition
+    if not HaveSavedHandle(EV_TABLE,EVENT_DETECT,typeId) then
+        call SaveTriggerHandle(EV_TABLE,EVENT_DETECT,typeId,CreateTrigger())
+    endif
+    return TriggerAddCondition(LoadTriggerHandle(EV_TABLE,EVENT_DETECT,typeId),Condition(c))
+endfunction
+function BagDetectorRegisterSetChangeEvent takes integer setId, code c returns triggercondition
+    if not HaveSavedHandle(EV_TABLE,EVENT_SETCHANGE,setId) then
+        call SaveTriggerHandle(EV_TABLE,EVENT_SETCHANGE,setId,CreateTrigger())
+    endif
+    return TriggerAddCondition(LoadTriggerHandle(EV_TABLE,EVENT_SETCHANGE,setId),Condition(c))
+endfunction
+
+/* EX API */
+function BagDetectorCreateEx takes integer typeId, player owner returns bagdetector
+    local bagdetector sd = BagDetectorCreate()
+    call BagDetectorSetTypeId(sd, typeId)
+    call BagDetectorSetOwner(sd, owner)
+    return sd
+endfunction
+
+endlibrary
+
+//! textmacro setitemdata takes SETID
+scope SETITEMDATA$SETID$ initializer OnMapLoad
+globals
+    private constant integer SET_ID = '$SETID$'
+endglobals
+private function OnSetChange takes nothing returns nothing
+    local player p = BagDetectorGetOwner(BagDetectorGetEventBag())
+    local integer pid = GetConvertedPlayerId(p)
+    local integer count = BagDetectorGetEventSetCount()
+    local integer newCount = BagDetectorGetEventSetNewCount()
+//! endtextmacro
+//! textmacro endsetitemdata
+endfunction
+private function OnFreeLoad takes nothing returns nothing
+    call BagDetectorRegisterSetChangeEvent(SET_ID,function OnSetChange)
+endfunction
+private function OnMapLoad takes nothing returns nothing
+    call ForForce(bj_FORCE_PLAYER[0], function OnFreeLoad)
+endfunction
+endscope
+//! endtextmacro
