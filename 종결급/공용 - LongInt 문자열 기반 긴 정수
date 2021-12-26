@@ -1,0 +1,274 @@
+//*****************************************************************
+// LongInt
+//  Version 0.8
+//*****************************************************************
+library LongInt
+    //=============================================================
+    private struct CALC extends array
+        //---------------------------------------------------------
+        static string A = "0"
+        static integer A_I = 0
+        static string B = "0"
+        static integer B_I = 0
+        static integer B2_I = 0
+        static string C = "ERROR"
+        //---------------------------------------------------------
+        static trigger ADD = CreateTrigger()
+        static trigger SUB = CreateTrigger()
+        static trigger SHIFT = CreateTrigger()
+        static trigger SUBSTR = CreateTrigger()
+        static trigger ISGOE = CreateTrigger()
+        static trigger FORMAT = CreateTrigger()
+        //---------------------------------------------------------
+        private static method OnAdd takes nothing returns boolean
+            local string c = ""
+            local string a = A
+            local integer aLen = StringLength(a)
+            local string b = B
+            local integer bLen = StringLength(b)
+            local integer mxLen = IMaxBJ(aLen,bLen)
+            local integer aTmp
+            local integer bTmp
+            local integer cTmp
+            local integer carry = 0
+            local integer i = 0
+            loop
+                if i < aLen then
+                    set aTmp = S2I(SubString(a,aLen-i-1,aLen-i))
+                else
+                    set aTmp = 0
+                endif
+                if i < bLen then
+                    set bTmp = S2I(SubString(b,bLen-i-1,bLen-i))
+                else
+                    set bTmp = 0
+                endif
+                exitwhen i >= mxLen
+                set cTmp = aTmp + bTmp + carry
+                if cTmp > 9 then
+                    set cTmp = cTmp - 10
+                    set carry = 1
+                else
+                    set carry = 0
+                endif
+                set c = I2S(cTmp) + c
+                set i = i + 1
+            endloop
+            if carry != 0 then
+                set c = I2S(carry) + c
+            endif
+            set CALC.C = c
+            return false
+        endmethod
+        //---------------------------------------------------------
+        private static method OnSub takes nothing returns boolean
+            local string c = ""
+            local string a = A
+            local integer aLen = StringLength(a)
+            local string b = B
+            local integer bLen = StringLength(b)
+            local integer mxLen = IMaxBJ(aLen,bLen)
+            local integer aTmp
+            local integer bTmp
+            local integer cTmp
+            local integer carry = 0
+            local integer i = 0
+            local integer cut = 0
+            loop
+                if i < aLen then
+                    set aTmp = S2I(SubString(a,aLen-i-1,aLen-i))
+                else
+                    set aTmp = 0
+                endif
+                if i < bLen then
+                    set bTmp = S2I(SubString(b,bLen-i-1,bLen-i))
+                else
+                    set bTmp = 0
+                endif
+                exitwhen i >= mxLen
+                set cTmp = aTmp - bTmp - carry
+                if cTmp < 0 then
+                    set cTmp = cTmp + 10
+                    set carry = 1
+                else
+                    set carry = 0
+                endif
+                if cTmp != 0 then
+                    set cut = i
+                endif
+                set c = I2S(cTmp) + c
+                set i = i + 1
+            endloop
+            if i - cut < 1 then
+                set c = "0"
+            else
+                set c = SubString(c,i-cut-1,i)
+            endif
+            set CALC.C = c
+            return false
+        endmethod
+        //---------------------------------------------------------
+        private static method OnShift takes nothing returns boolean
+            local string c = ""
+            local string a = A
+            local integer aLen = StringLength(a)
+            local integer b = B_I
+            if b < 0 then /* Counter Shift */
+                set b = -b
+                if b >= aLen then
+                    set c = "0"
+                else
+                    set c = SubString(a,0,aLen-b)
+                endif                
+            else /* Shift */
+                set c = a
+                if a != "0" then
+                    loop
+                        exitwhen b == 0
+                        set c = c + "0"
+                        set b = b - 1
+                    endloop
+                endif
+            endif
+            set CALC.C = c
+            return false
+        endmethod
+        //---------------------------------------------------------
+        private static method OnSubString takes nothing returns boolean
+            local string a = A
+            local integer aLen = StringLength(a)
+            local integer b = B_I
+            local integer b2 = IMinBJ(aLen,B2_I)
+            if b2 <= b then
+                set CALC.C = "0"
+                return false
+            endif
+            set CALC.C = SubString(a,aLen-b2,aLen-b)
+            return false
+        endmethod
+        //---------------------------------------------------------
+        private static method IsGreaterOrEqual takes nothing returns boolean
+            local string a = A
+            local integer aLen = StringLength(a)
+            local string b = B
+            local integer bLen = StringLength(b)
+            local integer i
+            local integer aTmp
+            local integer bTmp
+            if aLen < bLen then
+                return false
+            endif
+            if aLen > bLen then
+                return true
+            endif
+            if a == b then
+                return true
+            endif
+            set i = 0
+            loop
+                exitwhen i == aLen
+                set aTmp = S2I(SubString(a,i,i+1))
+                set bTmp = S2I(SubString(b,i,i+1))
+                if aTmp < bTmp then
+                    return false
+                endif
+                if aTmp > bTmp then
+                    return true
+                endif
+                set i = i + 1
+            endloop
+            return true
+        endmethod
+        //---------------------------------------------------------
+        private static method OnFormat takes nothing returns boolean
+            local string c = ""
+            local string a = A
+            local integer aLen = StringLength(a)
+            local integer b = B_I
+            local integer i = 0
+            local integer max = 0
+            loop
+                set max = IMinBJ(i+b,aLen)
+                exitwhen i >= aLen
+                set c = SubString(a,aLen-max,aLen-i) + c
+                set i = i + b
+                if i < aLen then
+                    set c = "," + c
+                endif
+            endloop
+            set CALC.C = c
+            return true
+        endmethod
+        //---------------------------------------------------------
+        private static method onInit takes nothing returns nothing
+            call TriggerAddCondition(ADD,function thistype.OnAdd)
+            call TriggerAddCondition(SUB,function thistype.OnSub)
+            call TriggerAddCondition(SHIFT,function thistype.OnShift)
+            call TriggerAddCondition(SUBSTR,function thistype.OnSubString)
+            call TriggerAddCondition(ISGOE,function thistype.IsGreaterOrEqual)
+            call TriggerAddCondition(FORMAT,function thistype.OnFormat)
+        endmethod
+        //---------------------------------------------------------
+    endstruct
+    //=============================================================
+    struct LongInt extends array
+        //---------------------------------------------------------
+        static method Sum takes string a, string b returns string
+            set CALC.A = a
+            set CALC.B = b
+            set CALC.C = "-ERROR-"
+            call TriggerEvaluate(CALC.ADD)
+            return CALC.C
+        endmethod
+        //---------------------------------------------------------
+        static method Add takes string a, string b returns string
+            set CALC.A = a
+            set CALC.B = b
+            set CALC.C = "-ERROR-"
+            call TriggerEvaluate(CALC.ADD)
+            return CALC.C
+        endmethod
+        //---------------------------------------------------------
+        static method Sub takes string a, string b returns string
+            set CALC.A = a
+            set CALC.B = b
+            set CALC.C = "-ERROR-"
+            call TriggerEvaluate(CALC.SUB)
+            return CALC.C
+        endmethod
+        //---------------------------------------------------------
+        static method Shift takes string a, integer b returns string
+            set CALC.A = a
+            set CALC.B_I = b
+            set CALC.C = "-ERROR-"
+            call TriggerEvaluate(CALC.SHIFT)
+            return CALC.C
+        endmethod
+        //---------------------------------------------------------
+        static method SubString takes string a, integer b, integer b2 returns string
+            set CALC.A = a
+            set CALC.B_I = b
+            set CALC.B2_I = b2
+            set CALC.C = "-ERROR-"
+            call TriggerEvaluate(CALC.SUBSTR)
+            return CALC.C
+        endmethod
+        //---------------------------------------------------------
+        static method IsGreaterOrEqual takes string a, string b returns boolean
+            set CALC.A = a
+            set CALC.B = b
+            return TriggerEvaluate(CALC.ISGOE)
+        endmethod
+        //---------------------------------------------------------
+        static method Format takes string a, integer b returns string
+            set CALC.A = a
+            set CALC.B_I = b
+            set CALC.C = "-ERROR-"
+            call TriggerEvaluate(CALC.FORMAT)
+            return CALC.C
+        endmethod
+        //---------------------------------------------------------
+    endstruct
+    //=============================================================
+endlibrary
+//*****************************************************************
