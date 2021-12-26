@@ -1,0 +1,197 @@
+/*
+    JN 키보드이벤트 중복적용 버그 우회 라이브러리
+    핫키 보드!
+    
+    
+    적용 포인트:
+    
+        - JN 키보드 이벤트를 등록하고 리워크 없이 방을 다시 돌리면
+          키보드 등록 오류가 뜨거나, 키를 한번 눌렀는데 두세번씩 실행됩니다 ㅠㅜ...
+        
+        - 키보드 이벤트를 등록하고 싱크시키는 과정이 심히 귀찮습니다! ㅠㅜㅜ...
+        
+        - 채팅을 입력하는 동안에는 핫키가 안 눌리게 하고 싶어요!
+        
+        
+    적용 방법:
+    
+        - 아래 첨부 주석에 들어간 내용으로 toc 파일을 만듭니다.
+          (반드시 한 줄을 입력하고 Enter 키로 끝맺어야 합니다!)
+        
+        - 아래 첨부 주석에 들어간 내용으로 fdf 파일을 만듭니다.
+        
+        - toc/fdf 파일을 불러와 war3mapImported 폴더를 지웁니다.
+        
+        - DzTriggerRegisterKeyEvent( ~~~~~ ) 를
+          HotkeyBoardRegisterEvent( "키", function 액션 ) 으로 변경합니다.
+          
+        - DzGetTriggerSyncPlayer( ) 를
+          HotkeyBoardGetPlayer( ) 로 변경합니다.
+          
+        - 끝!
+        
+    리스크:
+        
+        - 핫키 기능 + 자동 Sync를 전제로 하기 때문에, 살짝 딜레이가 있을 수 있습니다.
+        
+        - 인터페이스 단축키 기능을 응용하기 때문에, 사용할 수 있는 키 종류에 제한이 있습니다.
+          (대부분 알파벳 내지는 숫자)
+          
+          
+    리스크 대응 방안:
+    
+        - 캐릭터 조작 목적이 아닌, 인터페이스 조작 목적이라면 나쁘지 않은 선택이라고 생각합니다.
+          
+        - 죽었다 깨어나도 해결할 수 없는 리스크입니다.
+        
+        
+    더 많은 핫키 등록하는 방법:
+    
+        - HotkeyBoard.fdf 파일의 내용을 설명에 맞게 늘립니다.
+            Frame "BUTTON" "HotkeyA" {
+                ControlShortcutKey "A",
+            }
+            Frame "BUTTON" "HotkeyB" {
+                ControlShortcutKey "B",
+            }
+            ... 이하 생략
+            
+        - InitHotkeys 함수 안의 내용을 설명에 맞게 늘립니다.
+            set hk = DzFrameFindByName("HotkeyA", 0)
+            call SaveStr(HOTKEY_TABLE,0,hk,"A")
+            call DzFrameSetScriptByCode(hk, JN_FRAMEEVENT_CONTROL_CLICK, HOTKEY_CALLBACK, false)
+            set hk = DzFrameFindByName("HotkeyB", 0)
+            call SaveStr(HOTKEY_TABLE,0,hk,"B")
+            call DzFrameSetScriptByCode(hk, JN_FRAMEEVENT_CONTROL_CLICK, HOTKEY_CALLBACK, false)
+            ... 이하 생략
+        
+        - 끝!
+        
+          
+================================================================================
+    첨부파일 - HotkeyBoard.toc
+--------------------------------------------------------------------------------
+HotkeyBoard.fdf
+
+================================================================================
+    첨부파일 - HotkeyBoard.fdf
+--------------------------------------------------------------------------------
+Frame "FRAME" "HotkeyBoard" {
+    TabFocusPush,
+    LayerStyle "IGNORETRACKEVENTS",
+    Frame "BUTTON" "HotkeyI" {
+        ControlShortcutKey "I",
+    }
+    Frame "BUTTON" "HotkeyB" {
+        ControlShortcutKey "B",
+    }
+    // 더 많은 핫키 등록하는 방법!
+    //Frame "BUTTON" "Hotkey키" {
+    //    ControlShortcutKey "키",
+    //}
+}
+
+================================================================================
+*/
+library HotkeyBoard initializer OnMapLoad
+    
+    
+    globals
+        private constant string HOTKEYBOARD_TOC = "HotkeyBoard.toc"
+        
+        private hashtable HOTKEY_TABLE = InitHashtable()
+        private code HOTKEY_CALLBACK = null
+    endglobals
+    
+    
+    private function InitHotkeys takes nothing returns nothing
+        local integer hk
+        
+        set hk = DzFrameFindByName("HotkeyI", 0)
+        call SaveStr(HOTKEY_TABLE,0,hk,"I")
+        call DzFrameSetScriptByCode(hk, JN_FRAMEEVENT_CONTROL_CLICK, HOTKEY_CALLBACK, false)
+        
+        set hk = DzFrameFindByName("HotkeyB", 0)
+        call SaveStr(HOTKEY_TABLE,0,hk,"B")
+        call DzFrameSetScriptByCode(hk, JN_FRAMEEVENT_CONTROL_CLICK, HOTKEY_CALLBACK, false)
+        
+        // 더 많은 핫키 등록하는 방법!
+        //set hk = DzFrameFindByName("Hotkey키", 0)
+        //call SaveStr(HOTKEY_TABLE,0,hk,"키")
+        //call DzFrameSetScriptByCode(hk, JN_FRAMEEVENT_CONTROL_CLICK, HOTKEY_CALLBACK, false)
+        
+    endfunction
+    
+    
+    
+    globals
+        private player P_USR = null
+        private string P_HKEY = null
+    endglobals
+    
+    
+    function HotkeyBoardGetPlayer takes nothing returns player
+        return P_USR
+    endfunction
+    function HotkeyBoardGetKey takes nothing returns string
+        return P_HKEY
+    endfunction
+    
+    
+    function HotkeyBoardSimulate takes player p, string k returns nothing
+        if GetLocalPlayer() == p then
+            call DzSyncData("HKBR_HKDN",k)
+        endif
+    endfunction
+    
+    
+    function HotkeyBoardRegisterEvent takes string s, code c returns triggercondition
+        if not HaveSavedHandle(HOTKEY_TABLE,1,StringHash(s)) then
+            call SaveTriggerHandle(HOTKEY_TABLE,1,StringHash(s),CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(HOTKEY_TABLE,1,StringHash(s)),Condition(c))
+    endfunction
+    
+    
+    private function LocalHotkeyDown takes nothing returns nothing
+        call DzSyncData("HKBR_HKDN",LoadStr(HOTKEY_TABLE,0,DzGetTriggerUIEventFrame()))
+    endfunction
+    
+    private function OnSyncHotkeyDown takes nothing returns nothing
+        local player pp = P_USR
+        local string hk = P_HKEY
+        set P_USR = DzGetTriggerSyncPlayer()
+        set P_HKEY = DzGetTriggerSyncData()
+        call TriggerEvaluate(LoadTriggerHandle(HOTKEY_TABLE,1,StringHash(P_HKEY)))
+        set P_USR = pp
+        set P_HKEY = hk
+        set pp = null
+    endfunction
+    
+    private function InitInterface takes nothing returns nothing
+        local integer frame
+        local trigger trig
+        set trig = CreateTrigger( )
+        call DzTriggerRegisterSyncData( trig, "HKBR_HKDN", false )
+        call TriggerAddAction( trig, function OnSyncHotkeyDown )
+        set trig = null
+        
+        call DzLoadToc(HOTKEYBOARD_TOC)
+        
+        set frame = DzCreateFrame("HotkeyBoard",  DzGetGameUI(), 0)
+
+        call DzFrameSetAbsolutePoint(frame, JN_FRAMEPOINT_TOPRIGHT, -0.4, -0.3)
+        call DzFrameSetSize(frame,0.4,0.3)
+        
+        set HOTKEY_CALLBACK = function LocalHotkeyDown
+        call InitHotkeys()
+        
+        call DzFrameShow(frame, false)
+        call DzFrameShow(frame, true)
+    endfunction
+    
+    private function OnMapLoad takes nothing returns nothing
+        call ForForce(bj_FORCE_PLAYER[0],function InitInterface)
+    endfunction
+    
+endlibrary
