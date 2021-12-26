@@ -1,0 +1,313 @@
+/*
+    가상 무제한 인벤토리 VirtualBag
+    
+    개발자의 맵에 virtualbag 타입을 생성합니다.
+        - 여러 개의 가상 인벤토리를 다룰 수 있습니다
+        - 인벤토리의 크기를 설정할 수 있습니다
+        - 인벤토리의 타입을 설정하여, 이벤트 기반의 연산을 지정할 수 있습니다
+
+    local virtualbag inventory = VBagCreate()
+    call VBagDestroy(inventory)
+    if VBagExists(inventory) then
+        // 멀쩡히 존재하는 가상 인벤토리
+    else
+        // 생성되지 않았거나, 이미 Destroy된 가상 인벤토리
+    endif
+    
+    local integer invenSize = VBagGetSize(inventory)
+    call VBagSetSize(inventory, newSize)
+    local integer bagTypeId = VBagGetTypeId(inventory)
+    call VBagSetTypeId(inventory, newbagTypeId)
+    local player bagOwnerPlayer = VBagGetOwningPlayer(inventory)
+    call VBagSetOwningPlayer(inventory, newOwnerPlayer)
+    local unit bagOwnerUnit = VBagGetOwningUnit(inventory)
+    call VBagSetOwningUnit(inventory, newOwnerUnit)
+    
+    call VBagSetItem(inventory, slot, itemId, itemCharges)
+    local integer itemId = VBagGetItemType(inventory, slot)
+    local integer itemCharges = VBagGetItemCharges(inventory, slot)
+    call VBagResetItem(inventory, slot)
+    call VBagClear(inventory)
+    
+    if VBagItemExists(inventory, slot) then
+        // 그 슬롯에 아이템이 있음
+    else
+        // 아이템이 없음
+    endif
+*/
+library VirtualBag
+
+    struct virtualbag extends array
+    endstruct
+
+    globals
+        private hashtable BAG_PROPS = InitHashtable()
+        private hashtable BAG_ITEMS = InitHashtable()
+        private integer BAG_COUNTER = 1
+        private integer BAG_OCCUPY = 0
+        
+        private constant integer KEY_EXIST = -1
+        private constant integer KEY_SIZE = -2
+        private constant integer KEY_TIMESTAMP = -3
+        private constant integer KEY_TYPEID = -4
+        private constant integer KEY_OWNING_PLAYER = -5
+        private constant integer KEY_OWNING_UNIT = -6
+    endglobals
+
+
+    private function AllocateBag takes nothing returns virtualbag
+        local virtualbag bag = BAG_COUNTER
+        set BAG_COUNTER = BAG_COUNTER + 1
+        set BAG_OCCUPY = BAG_OCCUPY + 1
+        call SaveBoolean(BAG_PROPS,bag,KEY_EXIST,true)
+        call SaveInteger(BAG_PROPS,bag,KEY_SIZE,0)
+        call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,0)
+        call SaveInteger(BAG_PROPS,bag,KEY_TYPEID,0)
+        return bag
+    endfunction
+    private function DeallocateBag takes virtualbag bag returns nothing
+        call FlushChildHashtable(BAG_ITEMS,bag)
+        call FlushChildHashtable(BAG_PROPS,bag)
+        set BAG_OCCUPY = BAG_OCCUPY - 1
+    endfunction
+    
+    private function BagAllocated takes virtualbag bag returns boolean
+        return LoadBoolean(BAG_PROPS,bag,KEY_EXIST)
+    endfunction
+
+
+    function VBagExists takes virtualbag bag returns boolean
+        return BagAllocated(bag)
+    endfunction
+
+    function VBagCreate takes nothing returns virtualbag
+        return AllocateBag()
+    endfunction
+    function VBagDestroy takes virtualbag bag returns nothing
+        if BagAllocated(bag) then
+            call DeallocateBag(bag)
+        endif
+    endfunction
+    
+    function VBagGetSize takes virtualbag bag returns integer
+        if not BagAllocated(bag) then
+            return 0
+        endif
+        return LoadInteger(BAG_PROPS,bag,KEY_SIZE)
+    endfunction
+    function VBagSetSize takes virtualbag bag, integer size returns nothing
+        if size < 0 then
+            return
+        endif
+        if BagAllocated(bag) then
+            call SaveInteger(BAG_PROPS,bag,KEY_SIZE,size)
+            call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+        endif
+    endfunction
+    
+    function VBagGetTypeId takes virtualbag bag returns integer
+        if not BagAllocated(bag) then
+            return 0
+        endif
+        return LoadInteger(BAG_PROPS,bag,KEY_TYPEID)
+    endfunction
+    function VBagSetTypeId takes virtualbag bag, integer typeId returns nothing
+        if BagAllocated(bag) then
+            call SaveInteger(BAG_PROPS,bag,KEY_TYPEID,typeId)
+            call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+        endif
+    endfunction
+    
+    function VBagGetOwningPlayer takes virtualbag bag returns player
+        if not BagAllocated(bag) then
+            return null
+        endif
+        return LoadPlayerHandle(BAG_PROPS,bag,KEY_OWNING_PLAYER)
+    endfunction
+    function VBagSetOwningPlayer takes virtualbag bag, player owner returns nothing
+        if BagAllocated(bag) then
+            call SavePlayerHandle(BAG_PROPS,bag,KEY_OWNING_PLAYER,owner)
+            call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+        endif
+    endfunction
+    
+    function VBagGetOwningUnit takes virtualbag bag returns unit
+        if not BagAllocated(bag) then
+            return null
+        endif
+        return LoadUnitHandle(BAG_PROPS,bag,KEY_OWNING_UNIT)
+    endfunction
+    function VBagSetOwningUnit takes virtualbag bag, unit owner returns nothing
+        if BagAllocated(bag) then
+            call SaveUnitHandle(BAG_PROPS,bag,KEY_OWNING_UNIT,owner)
+            call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+        endif
+    endfunction
+    
+    function VBagGetTimestamp takes virtualbag bag returns integer
+        if not BagAllocated(bag) then
+            return 0
+        endif
+        return LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)
+    endfunction
+    
+    function VBagClear takes virtualbag bag returns nothing
+        if not BagAllocated(bag) then
+            return
+        endif
+        call FlushChildHashtable(BAG_ITEMS,bag)
+        call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+    endfunction
+    function VBagResetItem takes virtualbag bag, integer index returns nothing
+        if not BagAllocated(bag) then
+            return
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return
+        endif
+        call RemoveSavedInteger(BAG_ITEMS,bag,index*2)
+        call RemoveSavedInteger(BAG_ITEMS,bag,index*2+1)
+        call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+    endfunction
+    
+    function VBagSetItem takes virtualbag bag, integer index, integer typeId, integer charge returns nothing
+        if not BagAllocated(bag) then
+            return
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return
+        endif
+        if typeId == 0 then
+            return
+        endif
+        if charge < 0 then
+            return
+        endif
+        call SaveInteger(BAG_ITEMS,bag,index*2,typeId)
+        call SaveInteger(BAG_ITEMS,bag,index*2+1,charge)
+        call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+    endfunction
+    function VBagGetItemTypeId takes virtualbag bag, integer index returns integer
+        if not BagAllocated(bag) then
+            return 0
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return 0
+        endif
+        return LoadInteger(BAG_ITEMS,bag,index*2)
+    endfunction
+    function VBagGetItemCharges takes virtualbag bag, integer index returns integer
+        if not BagAllocated(bag) then
+            return 0
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return 0
+        endif
+        return LoadInteger(BAG_ITEMS,bag,index*2+1)
+    endfunction
+    
+    
+    function VBagItemExists takes virtualbag bag, integer index returns boolean
+        if not BagAllocated(bag) then
+            return false
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return false
+        endif
+        return LoadInteger(BAG_ITEMS,bag,index*2) != 0
+    endfunction
+    
+    
+    function VBagCreateEx takes integer typeId, integer size, player owner, unit u returns virtualbag
+        local virtualbag bag = AllocateBag()
+        call VBagSetTypeId(bag,typeId)
+        call VBagSetSize(bag,size)
+        if owner != null then
+            call VBagSetOwningPlayer(bag,owner)
+        endif
+        if u != null then
+            call VBagSetOwningUnit(bag,u)
+        endif
+        return bag
+    endfunction
+    
+    globals
+        private hashtable BAG_OP = InitHashtable()
+        private constant key BAG_OP_ADD
+        private constant key BAG_OP_DROP
+        
+        private virtualbag IEVENT_BAG = 0
+        private integer IEVENT_TYPEID = 0
+        private integer IEVENT_CHARGE = 0
+        private integer IEVENT_SLOT = -1
+    endglobals
+    
+    private function FireOperation takes virtualbag bag, integer op, integer id, integer charges, integer slot returns boolean
+        local boolean result
+        local integer btyp = LoadInteger(BAG_PROPS,bag,KEY_TYPEID)
+        local virtualbag pb = IEVENT_BAG
+        local integer pt = IEVENT_TYPEID
+        local integer pc = IEVENT_CHARGE
+        local integer ps = IEVENT_SLOT
+       
+        set IEVENT_BAG = bag
+        set IEVENT_TYPEID = id
+        set IEVENT_CHARGE = charges
+        set IEVENT_SLOT = slot
+        set result = TriggerEvaluate(LoadTriggerHandle(BAG_OP,op,btyp))
+        set IEVENT_BAG = pb
+        set IEVENT_TYPEID = pt
+        set IEVENT_CHARGE = pc
+        set IEVENT_SLOT = ps
+        
+        return result
+    endfunction
+    
+    function VBagGetEventBag takes nothing returns virtualbag
+        return IEVENT_BAG
+    endfunction
+    function VBagGetEventItemTypeId takes nothing returns integer
+        return IEVENT_TYPEID
+    endfunction
+    function VBagGetEventItemCharges takes nothing returns integer
+        return IEVENT_CHARGE
+    endfunction
+    function VBagGetEventItemSlot takes nothing returns integer
+        return IEVENT_SLOT
+    endfunction
+    
+    function VBagOperationAdd takes virtualbag bag, integer typeId, integer charge returns boolean
+        if not BagAllocated(bag) then
+            return false
+        endif
+        if typeId == 0 then
+            return false
+        endif
+        if charge < 0 then
+            return false
+        endif
+        return FireOperation(bag,BAG_OP_ADD,typeId,charge,-1)
+    endfunction
+    
+    function VBagOperationDrop takes virtualbag bag, integer index returns boolean
+        if not VBagItemExists(bag,index) then
+            return false
+        endif
+        return FireOperation(bag,BAG_OP_DROP,LoadInteger(BAG_ITEMS,bag,index*2),LoadInteger(BAG_ITEMS,bag,index*2+1),index)
+    endfunction
+    
+    function VBagTriggerRegisterOperationAddEvent takes integer bagType, code c returns triggercondition
+        if not HaveSavedInteger(BAG_OP,BAG_OP_ADD,bagType) then
+            call SaveTriggerHandle(BAG_OP,BAG_OP_ADD,bagType,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(BAG_OP,BAG_OP_ADD,bagType),Condition(c))
+    endfunction
+    
+    function VBagTriggerRegisterOperationDropEvent takes integer bagType, code c returns triggercondition
+        if not HaveSavedInteger(BAG_OP,BAG_OP_DROP,bagType) then
+            call SaveTriggerHandle(BAG_OP,BAG_OP_DROP,bagType,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(BAG_OP,BAG_OP_DROP,bagType),Condition(c))
+    endfunction
+
+endlibrary
