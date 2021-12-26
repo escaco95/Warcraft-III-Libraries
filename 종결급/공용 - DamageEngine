@@ -1,0 +1,345 @@
+//*****************************************************************
+// 데미지 엔진 - 나만의 데미지 시스템을 만들자!
+//     Version 1.4
+//*****************************************************************
+library DamageEngine
+    //=============================================================
+    // DamageEngine 사용자 설정
+    private struct CONFIG extends array
+        //---------------------------------------------------------
+        // *** 주의 : 시스템 구동에 영향을 주는 핵심 설정입니다 ***
+        //  시스템에 대한 충분한 이해 없이 이하의 설정을 변경하게 될 경우 급격한
+        //  퍼포먼스 감소, 예기지 않은 버그가 발생할 수 있습니다. 변경하기 전에
+        //  신중하게 고민하고 결정하세요!
+        //---------------------------------------------------------
+        // CONFIG.CLEAR_DELAY 설명
+        //  - DamageEngine은 call DamageEngine.Add( 유닛 ) 호출을
+        //    통해 수동 등록된 유닛들만 관리합니다.
+        //  - 단, 등록된 유닛에 대한 제거 과정은 '자동'으로 진행합니다.
+        //  > CLEAR_DELAY(초)는 자동 메모리 최적화 간격을 의미하며, 해당
+        //    간격이 짧을수록 메모리 효율은 증가하나 최적화 렉은 증가합니다.
+        static constant real CLEAR_DELAY = 0.025
+        //---------------------------------------------------------
+        // CONFIG.CLEAR_OVERCLOCK 설명
+        //  - DamageEngine은 call DamageEngine.Add( 유닛 ) 호출을
+        //    통해 수동 등록된 유닛들만 관리합니다.
+        //  - 단, 등록된 유닛에 대한 제거 과정은 '자동'으로 진행합니다.
+        //  > CLEAR_OVERCLOCK(부스트 횟수)는 자동 메모리 최적화 초과실행횟수를
+        //    의미하며 횟수가 높을수록 메모리 효율은 증가하나 최적화 렉은 '크게'증가합니다.
+        static constant integer CLEAR_OVERCLOCK = 100
+        //  수치 설명
+        //  > 수명 짧은 유닛이 진짜 오질나게 많이 나오는 맵
+        //  static constant integer CLEAR_OVERCLOCK = 100++
+        //  > 권장 기본값
+        //  static constant integer CLEAR_OVERCLOCK = 50
+        //  > 권장 최소수치
+        //  static constant integer CLEAR_OVERCLOCK = 10
+        //  > 맵 버리고 튀고 싶을 때
+        //  static constant integer CLEAR_OVERCLOCK = 0
+        //---------------------------------------------------------
+    endstruct
+    //=============================================================
+    private struct DEBUGINFO extends array
+        //---------------------------------------------------------
+        static constant string ARGNULL /*
+        */ = "DamageEngine 경고: null 유닛의 등록 시도됨"
+        static constant string ARGEXISTS /*
+        */ = "DamageEngine 경고: 중복 등록 시도됨"
+        static constant string CLEARED /*
+        */ = "DamageEngine 알림: 핸들 제거됨"
+        //---------------------------------------------------------
+        static integer GC_TOTAL = 0
+        static integer GC_REMOVED = 0
+        //---------------------------------------------------------
+    endstruct
+    //=============================================================
+    private struct INDEX
+        //---------------------------------------------------------
+        boolean Exists
+        integer Handle
+        unit Unit
+        trigger Trig
+        triggercondition Cond
+        //---------------------------------------------------------
+    endstruct
+    //=============================================================
+    private struct PROC extends array
+        //---------------------------------------------------------
+        static hashtable TABLE = InitHashtable()
+        //---------------------------------------------------------
+        static trigger E_ANYATK = CreateTrigger()
+        static trigger E_ANYHIT = CreateTrigger()
+        static key E_TYPEATK
+        static key E_TYPEHIT
+        static key E_ITYPEATK
+        static key E_ITYPEHIT
+        //---------------------------------------------------------
+        static item P_ITEM = null
+        static integer P_FLAGID = 0
+        //---------------------------------------------------------
+        static boolean FIRSTRUN = true
+        static integer CUR = 0
+        static integer CNT = 0
+        static integer MAX = 0
+        //---------------------------------------------------------
+        static hashtable FLAG_TABLE = InitHashtable()
+        static integer FLAGID = 1
+        //---------------------------------------------------------
+        static method Contains takes unit u returns boolean
+            return HaveSavedInteger(TABLE,0,GetHandleId(u))
+        endmethod
+        //---------------------------------------------------------
+        private static method DamageProcess /*
+            */ takes unit src, unit dst returns nothing
+            local integer i
+            local item pt
+            local integer pf = P_FLAGID
+            
+            set P_FLAGID = FLAGID
+            set FLAGID = FLAGID + 1
+            call TriggerEvaluate(E_ANYATK)
+            
+            call TriggerEvaluate(LoadTriggerHandle(TABLE /*
+            */ , E_TYPEATK, GetUnitTypeId(src) ))
+            
+            if IsUnitType(GetEventDamageSource(),UNIT_TYPE_HERO) then
+                set pt = P_ITEM
+                set i = UnitInventorySize(GetEventDamageSource())
+                loop
+                    exitwhen i == 0
+                    set i = i - 1
+                    set P_ITEM = UnitItemInSlot(GetEventDamageSource(),i)
+                    call TriggerEvaluate(LoadTriggerHandle(TABLE /*
+                    */ , E_ITYPEATK, GetItemTypeId(P_ITEM) ))
+                endloop
+                set P_ITEM = pt
+                set pt = null
+            endif
+            
+            if IsUnitType(GetTriggerUnit(),UNIT_TYPE_HERO) then
+                set pt = P_ITEM
+                set i = UnitInventorySize(GetTriggerUnit())
+                loop
+                    exitwhen i == 0
+                    set i = i - 1
+                    set P_ITEM = UnitItemInSlot(GetTriggerUnit(),i)
+                    call TriggerEvaluate(LoadTriggerHandle(TABLE /*
+                    */ , E_ITYPEHIT, GetItemTypeId(P_ITEM) ))
+                endloop
+                set P_ITEM = pt
+                set pt = null
+            endif
+            
+            call TriggerEvaluate(LoadTriggerHandle(TABLE /*
+            */ , E_TYPEHIT, GetUnitTypeId(dst) ))
+            
+            call TriggerEvaluate(E_ANYHIT)
+            
+            call FlushChildHashtable(FLAG_TABLE,P_FLAGID)
+            set P_FLAGID = pf
+            
+        endmethod
+        private static method OnEvaluate takes nothing returns boolean
+            if GetEventDamage() == 0 then
+                return false
+            endif
+            call DamageProcess(GetEventDamageSource(),GetTriggerUnit())
+            return false
+        endmethod
+        //---------------------------------------------------------
+        private static method OnTimeoutClock takes nothing returns nothing
+            local INDEX i
+            
+            if CUR > MAX then
+                set CUR = 1
+                return
+            endif
+            
+            set i = CUR
+            set CUR = CUR + 1
+            
+            if not i.Exists then
+                return
+            endif
+            
+            set DEBUGINFO.GC_TOTAL = DEBUGINFO.GC_TOTAL + 1
+            
+            if GetUnitTypeId(i.Unit) != 0 then
+                return
+            endif
+            
+            set DEBUGINFO.GC_REMOVED = DEBUGINFO.GC_REMOVED + 1
+            set CNT = CNT - 1
+            
+            set i.Exists = false
+            call TriggerRemoveCondition(i.Trig,i.Cond)
+            set i.Cond = null
+            call DestroyTrigger(i.Trig)
+            set i.Trig = null
+            set i.Unit = null
+            call RemoveSavedInteger(TABLE,0,i.Handle)
+            set i.Handle = 0
+            call i.destroy()
+            
+            debug call DisplayTextToPlayer(GetLocalPlayer() /*
+            */ , 0.0, 0.0, DEBUGINFO.CLEARED )
+        endmethod
+        //---------------------------------------------------------
+        private static method OnTimeout takes nothing returns nothing
+            local integer i = 0
+            loop
+                call OnTimeoutClock()
+                set i = i + 1
+                exitwhen i >= CONFIG.CLEAR_OVERCLOCK
+            endloop
+        endmethod
+        //---------------------------------------------------------
+        static method Register takes unit u returns nothing
+            local INDEX i = INDEX.create()
+            local integer i2i = i
+            set i.Handle = GetHandleId(u)
+            set i.Unit = u
+            set i.Trig = CreateTrigger()
+            set i.Cond = TriggerAddCondition(i.Trig, /*
+            */ Condition(function thistype.OnEvaluate))
+            call SaveInteger(TABLE,0,i.Handle,i)
+            set i.Exists = true
+            call TriggerRegisterUnitEvent(i.Trig,u, /*
+            */ EVENT_UNIT_DAMAGED)
+            set CNT = CNT + 1
+            if i2i > MAX then
+                set MAX = i
+            endif
+        endmethod
+        //---------------------------------------------------------
+        private static method OnDebugPrintStat takes nothing returns nothing
+            debug call BJDebugMsg("[DamageEngine] 10초 통계 - "+I2S(DEBUGINFO.GC_TOTAL)+"처리, "+I2S(DEBUGINFO.GC_REMOVED)+"제거, "+I2S(CNT)+"/"+I2S(MAX)+"점유")
+            set DEBUGINFO.GC_TOTAL = 0
+            set DEBUGINFO.GC_REMOVED = 0
+        endmethod
+        //---------------------------------------------------------
+        private static method onInit takes nothing returns nothing
+            local trigger t = CreateTrigger()
+            call TriggerRegisterTimerEvent(t,0.03125,true)
+            call TriggerAddAction(t,function thistype.OnTimeout)
+            set t = null
+            set t = CreateTrigger()
+            call TriggerRegisterTimerEvent(t,10.0,true)
+            call TriggerAddAction(t,function thistype.OnDebugPrintStat)
+            set t = null
+        endmethod
+        //---------------------------------------------------------
+    endstruct
+    //=============================================================
+    struct DamageArg extends array
+        //---------------------------------------------------------
+        static method Reset takes nothing returns nothing
+            set PROC.FLAGID = PROC.FLAGID + 1
+        endmethod
+        static method SetBool takes integer field, boolean value returns nothing
+            call SaveBoolean(PROC.FLAG_TABLE,PROC.FLAGID,field,value)
+        endmethod
+        static method SetInt takes integer field, integer value returns nothing
+            call SaveInteger(PROC.FLAG_TABLE,PROC.FLAGID,field,value)
+        endmethod
+        //---------------------------------------------------------
+    endstruct
+    struct DamageFlag extends array
+        //---------------------------------------------------------
+        static method SetBool takes integer field, boolean value returns nothing
+            call SaveBoolean(PROC.FLAG_TABLE,PROC.P_FLAGID,field,value)
+        endmethod
+        static method SetInt takes integer field, integer value returns nothing
+            call SaveInteger(PROC.FLAG_TABLE,PROC.P_FLAGID,field,value)
+        endmethod
+        static method GetBool takes integer field returns boolean
+            return LoadBoolean(PROC.FLAG_TABLE,PROC.P_FLAGID,field)
+        endmethod
+        static method GetInt takes integer field returns integer
+            return LoadInteger(PROC.FLAG_TABLE,PROC.P_FLAGID,field)
+        endmethod
+        //---------------------------------------------------------
+    endstruct
+    //=============================================================
+    struct DamageEngine extends array
+        //---------------------------------------------------------
+        static method RegisterAnyUnitAttackEvent /*
+            */ takes code trigAction /*
+            */ returns triggercondition
+            return TriggerAddCondition(PROC.E_ANYATK,Condition(trigAction))
+        endmethod
+        static method RegisterUnitTypeAttackEvent /*
+            */ takes integer typeId, code trigAction /*
+            */ returns triggercondition
+            if not HaveSavedHandle(PROC.TABLE,PROC.E_TYPEATK,typeId) then
+                call SaveTriggerHandle(PROC.TABLE,PROC.E_TYPEATK,typeId,CreateTrigger())
+            endif
+            return TriggerAddCondition(LoadTriggerHandle(PROC.TABLE,PROC.E_TYPEATK,typeId) /*
+                */ , Condition(trigAction))
+        endmethod
+        //---------------------------------------------------------
+        static method RegisterAnyUnitHitEvent /*
+            */ takes code trigAction /*
+            */ returns triggercondition
+            return TriggerAddCondition(PROC.E_ANYHIT,Condition(trigAction))
+        endmethod
+        static method RegisterUnitTypeHitEvent /*
+            */ takes integer typeId, code trigAction /*
+            */ returns triggercondition
+            if not HaveSavedHandle(PROC.TABLE,PROC.E_TYPEHIT,typeId) then
+                call SaveTriggerHandle(PROC.TABLE,PROC.E_TYPEHIT,typeId,CreateTrigger())
+            endif
+            return TriggerAddCondition(LoadTriggerHandle(PROC.TABLE,PROC.E_TYPEHIT,typeId) /*
+                */ , Condition(trigAction))
+        endmethod
+        //---------------------------------------------------------
+        static method GetEventItem takes nothing returns item
+            return PROC.P_ITEM
+        endmethod
+        //---------------------------------------------------------
+        //static method RegisterAnyItemAttackEvent /*
+        //    */ takes code trigAction /*
+        //    */ returns triggercondition
+        //   return TriggerAddCondition(PROC.E_ANYATK,Condition(trigAction))
+        //endmethod
+        static method RegisterItemTypeAttackEvent /*
+            */ takes integer typeId, code trigAction /*
+            */ returns triggercondition
+            if not HaveSavedHandle(PROC.TABLE,PROC.E_ITYPEATK,typeId) then
+                call SaveTriggerHandle(PROC.TABLE,PROC.E_ITYPEATK,typeId,CreateTrigger())
+            endif
+            return TriggerAddCondition(LoadTriggerHandle(PROC.TABLE,PROC.E_ITYPEATK,typeId) /*
+                */ , Condition(trigAction))
+        endmethod
+        //---------------------------------------------------------
+        //static method RegisterAnyItemHitEvent /*
+        //    */ takes code trigAction /*
+        //    */ returns triggercondition
+        //    return TriggerAddCondition(PROC.E_ANYHIT,Condition(trigAction))
+        //endmethod
+        static method RegisterItemTypeHitEvent /*
+            */ takes integer typeId, code trigAction /*
+            */ returns triggercondition
+            if not HaveSavedHandle(PROC.TABLE,PROC.E_ITYPEHIT,typeId) then
+                call SaveTriggerHandle(PROC.TABLE,PROC.E_ITYPEHIT,typeId,CreateTrigger())
+            endif
+            return TriggerAddCondition(LoadTriggerHandle(PROC.TABLE,PROC.E_ITYPEHIT,typeId) /*
+                */ , Condition(trigAction))
+        endmethod
+        //---------------------------------------------------------
+        static method Add takes unit u returns nothing
+            if u == null then
+                debug call BJDebugMsg(DEBUGINFO.ARGNULL)
+                return
+            endif
+            if PROC.Contains(u) then
+                debug call BJDebugMsg(DEBUGINFO.ARGEXISTS)
+                return
+            endif
+            call PROC.Register(u)
+        endmethod
+        //---------------------------------------------------------
+    endstruct
+    //=============================================================
+endlibrary
+//*****************************************************************
