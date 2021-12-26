@@ -1,0 +1,420 @@
+/*
+    궁극의 커스텀이벤트 라이브러리
+    
+    
+    적용 포인트:
+    
+        - 커스텀 이벤트! 너무 좋은데...
+          인자가 다양해질수록 더욱 늘어나는 코드!
+          트작유 트작플 트작템 트작 어쩌고저쩌고! 너무 구현하기 힘들다!
+        
+        
+    강점:
+        - 자유 파라미터 바탕의 설계로 수십, 수백종의 인자를 가진 이벤트들을 양산할 수 있습니다!
+        
+        - 파라미터가 많은 이벤트 = 가로로 길어짐 vs 세로로 길어짐
+          차라리 세로로 길어지는 게 더 좋지 않을까요?
+    
+        
+    사용 방법:
+    
+        constant key EVENT_HERO_SWAP_ITEM
+        
+        call CustomEventArgSetPlayer( 'OWNR', Player(0) )
+        call CustomEventArgSetUnit( 'HERO', GetTriggerUnit( ) )
+        call CustomEventArgSetItem( 'TSRC', tem )
+        call CustomEventArgSetItem( 'TDST', GetOrderTargetItem( ) )
+        call CustomEventFire( EVENT_HERO_SWAP_ITEM )
+        
+        local player    owner   = CustomEventDataGetPlayer( 'OWNR' )
+        local unit      hero    = CustomEventDataGetPlayer( 'HERO' )
+        local item      src     = CustomEventDataGetPlayer( 'TSRC' )
+        local item      dst     = CustomEventDataGetPlayer( 'TDST' )
+        call BJDebugMsg( GetPlayerName(owner) + "의 영웅 " + GetUnitName(hero) + " 아이템 스왑했습니다!" )
+        call BJDebugMsg( "스왑하여 낀 아이템: " + GetItemName(src) )
+        call BJDebugMsg( "스왑하여 뺀 아이템: " + GetItemName(dst) )
+        
+        
+    리스크:
+        
+        - fixed paramater keyword 대신 integer 를 사용하게 되어,
+          이벤트의 스펙 세팅 및 변경 과정에서 오탈자로 인한 의도치 않은 치명상을 입으실 수 있습니다.
+        
+        - 해시 테이블을 사용하는 만큼, 처리 속도가 당연히 약간 더 느립니다.
+        
+        - 이 라이브러리는 인자 인덱스가 무한대로 증가합니다.
+          21억 회 이상 호출되었을 경우, 올바른 동작을 100% 보장하지 못합니다!
+          
+          
+    리스크 대응 방안:
+    
+        - field key 값에 직접 숫자 또는 상수를 넣지 말고,
+          constant key를 활용하여 fixed keyword가 사용되도록 유도합니다!
+          
+        - 고속 처리가 필요한 커스텀 이벤트는, 직접 구현하여 최적의 상태로 돌리는 지혜를 발휘해야 합니다.
+          
+        - 자주 발생하는 타격 류 시스템과 연동하면 의외로 몇 시간 안에 달성할 수 있습니다.
+          그래서 CustomEvent는 모니터링용 메트릭을 제공합니다.
+          
+          local integer 현재인덱스 = CustomEventGetIndex( )
+          local integer 현재인덱스 = CustomEvent.Index
+          
+          위 지표를 일정 시간 간격으로 모니터링하여, 대충 게임 끝날 때까지 얼마나 채울 것인가
+          에 대한 힌트를 얻을 수 있습니다.
+    
+    
+    [API 목록]
+    
+        call CustomEventArgReset( )
+        call CustomEventArgSetInt( integer field, value )
+        call CustomEventArgSetBool( integer field, value )
+        call CustomEventArgSetReal( integer field, value )
+        call CustomEventArgSetString( integer field, value )
+        call CustomEventArgSetUnit( integer field, value )
+        call CustomEventArgSetPlayer( integer field, value )
+        call CustomEventArgSetItem( integer field, value )
+        
+        call CustomEventArg.Reset()
+        call CustomEventArg.SetInt( integer field, value )
+        call CustomEventArg.SetBool( integer field, value )
+        call CustomEventArg.SetReal( integer field, value )
+        call CustomEventArg.SetString( integer field, value )
+        call CustomEventArg.SetUnit( integer field, value )
+        call CustomEventArg.SetPlayer( integer field, value )
+        call CustomEventArg.SetItem( integer field, value )
+        
+        call CustomEvent.Arg.Reset()
+        call CustomEvent.Arg.SetInt( integer field, value )
+        call CustomEvent.Arg.SetBool( integer field, value )
+        call CustomEvent.Arg.SetReal( integer field, value )
+        call CustomEvent.Arg.SetString( integer field, value )
+        call CustomEvent.Arg.SetUnit( integer field, value )
+        call CustomEvent.Arg.SetPlayer( integer field, value )
+        call CustomEvent.Arg.SetItem( integer field, value )
+        
+        
+        call CustomEventDataSetInt( integer field, value )
+        call CustomEventDataSetBool( integer field, value )
+        call CustomEventDataSetReal( integer field, value )
+        call CustomEventDataSetString( integer field, value )
+        call CustomEventDataSetUnit( integer field, value )
+        call CustomEventDataSetPlayer( integer field, value )
+        call CustomEventDataSetItem( integer field, value )
+        
+        call CustomEventData.SetInt( integer field, value )
+        call CustomEventData.SetBool( integer field, value )
+        call CustomEventData.SetReal( integer field, value )
+        call CustomEventData.SetString( integer field, value )
+        call CustomEventData.SetUnit( integer field, value )
+        call CustomEventData.SetPlayer( integer field, value )
+        call CustomEventData.SetItem( integer field, value )
+        
+        call CustomEvent.Data.SetInt( integer field, value )
+        call CustomEvent.Data.SetBool( integer field, value )
+        call CustomEvent.Data.SetReal( integer field, value )
+        call CustomEvent.Data.SetString( integer field, value )
+        call CustomEvent.Data.SetUnit( integer field, value )
+        call CustomEvent.Data.SetPlayer( integer field, value )
+        call CustomEvent.Data.SetItem( integer field, value )
+        
+        set value = CustomEventDataGetInt( integer field )
+        set value = CustomEventDataGetBool( integer field )
+        set value = CustomEventDataGetReal( integer field )
+        set value = CustomEventDataGetString( integer field )
+        set value = CustomEventDataGetUnit( integer field )
+        set value = CustomEventDataGetPlayer( integer field )
+        set value = CustomEventDataGetItem( integer field )
+        
+        set value = CustomEventData.GetInt( integer field )
+        set value = CustomEventData.GetBool( integer field )
+        set value = CustomEventData.GetReal( integer field )
+        set value = CustomEventData.GetString( integer field )
+        set value = CustomEventData.GetUnit( integer field )
+        set value = CustomEventData.GetPlayer( integer field )
+        set value = CustomEventData.GetItem( integer field )
+        
+        set value = CustomEvent.Data.GetInt( integer field )
+        set value = CustomEvent.Data.GetBool( integer field )
+        set value = CustomEvent.Data.GetReal( integer field )
+        set value = CustomEvent.Data.GetString( integer field )
+        set value = CustomEvent.Data.GetUnit( integer field )
+        set value = CustomEvent.Data.GetPlayer( integer field )
+        set value = CustomEvent.Data.GetItem( integer field )
+        
+        
+        set eventId = CustomEventGetEventId( )
+        set typeId  = CustomEventGetTypeId( )
+        
+        set eventId = CustomEvent.EventId
+        set typeId  = CustomEvent.TypeId
+        
+        local boolean result = CustomEventFire( integer eventId )
+        local boolean result = CustomEventFireTypeId( integer eventId, integer typeId )
+        
+        local boolean result = CustomEvent.Fire( integer eventId )
+        local boolean result = CustomEvent.FireTypeId( integer eventId, integer typeId )
+
+        local triggercondition con = CustomEventRegister( integer eventId, code eventaction )
+        local triggercondition con = CustomEventRegisterTypeId( integer eventId, integer typeId, code eventaction )
+        
+        local triggercondition con = CustomEvent.Register( integer eventId, code eventaction )
+        local triggercondition con = CustomEvent.RegisterTypeId( integer eventId, integer typeId, code eventaction )
+        
+    와우!
+*/
+library CustomEvent
+
+
+    globals
+        private hashtable MAIN_TABLE = InitHashtable()
+        private hashtable SUB_TABLE = InitHashtable()
+        private hashtable ARG_TABLE = InitHashtable()
+        
+        private integer P_MAIN = 0
+        private integer P_SUB = 0
+        private integer P_ARG = 0
+        
+        private integer I_ARG = 1
+    endglobals
+    
+    
+    function CustomEventArgReset takes nothing returns nothing
+        set I_ARG = I_ARG + 1
+    endfunction
+    function CustomEventArgSetInt takes integer field, integer value returns nothing
+        call SaveInteger(ARG_TABLE,I_ARG,field,value)
+    endfunction
+    function CustomEventArgSetBool takes integer field, boolean value returns nothing
+        call SaveBoolean(ARG_TABLE,I_ARG,field,value)
+    endfunction
+    function CustomEventArgSetReal takes integer field, real value returns nothing
+        call SaveReal(ARG_TABLE,I_ARG,field,value)
+    endfunction
+    function CustomEventArgSetString takes integer field, string value returns nothing
+        call SaveStr(ARG_TABLE,I_ARG,field,value)
+    endfunction
+    function CustomEventArgSetUnit takes integer field, unit value returns nothing
+        call SaveUnitHandle(ARG_TABLE,I_ARG,field,value)
+    endfunction
+    function CustomEventArgSetPlayer takes integer field, player value returns nothing
+        call SavePlayerHandle(ARG_TABLE,I_ARG,field,value)
+    endfunction
+    function CustomEventArgSetItem takes integer field, item value returns nothing
+        call SaveItemHandle(ARG_TABLE,I_ARG,field,value)
+    endfunction
+    
+    
+    struct CustomEventArg extends array
+        static method Reset takes nothing returns nothing
+            set I_ARG = I_ARG + 1
+        endmethod
+        static method SetInt takes integer field, integer value returns nothing
+            call SaveInteger(ARG_TABLE,I_ARG,field,value)
+        endmethod
+        static method SetBool takes integer field, boolean value returns nothing
+            call SaveBoolean(ARG_TABLE,I_ARG,field,value)
+        endmethod
+        static method SetReal takes integer field, real value returns nothing
+            call SaveReal(ARG_TABLE,I_ARG,field,value)
+        endmethod
+        static method SetString takes integer field, string value returns nothing
+            call SaveStr(ARG_TABLE,I_ARG,field,value)
+        endmethod
+        static method SetUnit takes integer field, unit value returns nothing
+            call SaveUnitHandle(ARG_TABLE,I_ARG,field,value)
+        endmethod
+        static method SetPlayer takes integer field, player value returns nothing
+            call SavePlayerHandle(ARG_TABLE,I_ARG,field,value)
+        endmethod
+        static method SetItem takes integer field, item value returns nothing
+            call SaveItemHandle(ARG_TABLE,I_ARG,field,value)
+        endmethod
+    endstruct
+    
+    
+    function CustomEventDataSetInt takes integer field, integer value returns nothing
+        call SaveInteger(ARG_TABLE,P_ARG,field,value)
+    endfunction
+    function CustomEventDataSetBool takes integer field, boolean value returns nothing
+        call SaveBoolean(ARG_TABLE,P_ARG,field,value)
+    endfunction
+    function CustomEventDataSetReal takes integer field, real value returns nothing
+        call SaveReal(ARG_TABLE,P_ARG,field,value)
+    endfunction
+    function CustomEventDataSetString takes integer field, string value returns nothing
+        call SaveStr(ARG_TABLE,P_ARG,field,value)
+    endfunction
+    function CustomEventDataSetUnit takes integer field, unit value returns nothing
+        call SaveUnitHandle(ARG_TABLE,P_ARG,field,value)
+    endfunction
+    function CustomEventDataSetPlayer takes integer field, player value returns nothing
+        call SavePlayerHandle(ARG_TABLE,P_ARG,field,value)
+    endfunction
+    function CustomEventDataSetItem takes integer field, item value returns nothing
+        call SaveItemHandle(ARG_TABLE,P_ARG,field,value)
+    endfunction
+    
+    
+    function CustomEventDataGetInt takes integer field returns integer
+        return LoadInteger(ARG_TABLE,P_ARG,field)
+    endfunction
+    function CustomEventDataGetBool takes integer field returns boolean
+        return LoadBoolean(ARG_TABLE,P_ARG,field)
+    endfunction
+    function CustomEventDataGetReal takes integer field returns real
+        return LoadReal(ARG_TABLE,P_ARG,field)
+    endfunction
+    function CustomEventDataGetString takes integer field returns string
+        return LoadStr(ARG_TABLE,P_ARG,field)
+    endfunction
+    function CustomEventDataGetUnit takes integer field returns unit
+        return LoadUnitHandle(ARG_TABLE,P_ARG,field)
+    endfunction
+    function CustomEventDataGetPlayer takes integer field returns player
+        return LoadPlayerHandle(ARG_TABLE,P_ARG,field)
+    endfunction
+    function CustomEventDataGetItem takes integer field returns item
+        return LoadItemHandle(ARG_TABLE,P_ARG,field)
+    endfunction
+    
+    
+    struct CustomEventData extends array
+        static method SetInt takes integer field, integer value returns nothing
+            call SaveInteger(ARG_TABLE,P_ARG,field,value)
+        endmethod
+        static method SetBool takes integer field, boolean value returns nothing
+            call SaveBoolean(ARG_TABLE,P_ARG,field,value)
+        endmethod
+        static method SetReal takes integer field, real value returns nothing
+            call SaveReal(ARG_TABLE,P_ARG,field,value)
+        endmethod
+        static method SetString takes integer field, string value returns nothing
+            call SaveStr(ARG_TABLE,P_ARG,field,value)
+        endmethod
+        static method SetUnit takes integer field, unit value returns nothing
+            call SaveUnitHandle(ARG_TABLE,P_ARG,field,value)
+        endmethod
+        static method SetPlayer takes integer field, player value returns nothing
+            call SavePlayerHandle(ARG_TABLE,P_ARG,field,value)
+        endmethod
+        static method SetItem takes integer field, item value returns nothing
+            call SaveItemHandle(ARG_TABLE,P_ARG,field,value)
+        endmethod
+        
+        
+        static method GetInt takes integer field returns integer
+            return LoadInteger(ARG_TABLE,P_ARG,field)
+        endmethod
+        static method GetBool takes integer field returns boolean
+            return LoadBoolean(ARG_TABLE,P_ARG,field)
+        endmethod
+        static method GetReal takes integer field returns real
+            return LoadReal(ARG_TABLE,P_ARG,field)
+        endmethod
+        static method GetString takes integer field returns string
+            return LoadStr(ARG_TABLE,P_ARG,field)
+        endmethod
+        static method GetUnit takes integer field returns unit
+            return LoadUnitHandle(ARG_TABLE,P_ARG,field)
+        endmethod
+        static method GetPlayer takes integer field returns player
+            return LoadPlayerHandle(ARG_TABLE,P_ARG,field)
+        endmethod
+        static method GetItem takes integer field returns item
+            return LoadItemHandle(ARG_TABLE,P_ARG,field)
+        endmethod
+    endstruct
+
+
+    function CustomEventGetIndex takes nothing returns integer
+        return I_ARG
+    endfunction
+    function CustomEventGetEventId takes nothing returns integer
+        return P_MAIN
+    endfunction
+    function CustomEventGetTypeId takes nothing returns integer
+        return P_SUB
+    endfunction
+    
+    
+    function CustomEventFire takes integer mainEvent returns boolean
+        local integer pm = P_MAIN
+        local integer ps = P_SUB
+        local integer pa = P_ARG
+        local boolean result
+        
+        set P_MAIN = mainEvent
+        set P_SUB = 0
+        set P_ARG = I_ARG
+        set I_ARG = I_ARG + 1
+        set result = TriggerEvaluate(LoadTriggerHandle(MAIN_TABLE,mainEvent,0))
+        set P_MAIN = pm
+        set P_SUB = ps
+        call FlushChildHashtable(ARG_TABLE,P_ARG)
+        set P_ARG = pa
+        
+        return result
+    endfunction
+    function CustomEventFireTypeId takes integer mainEvent, integer subEvent returns boolean
+        local integer pm = P_MAIN
+        local integer ps = P_SUB
+        local boolean result
+        
+        set P_MAIN = mainEvent
+        set P_SUB = subEvent
+        set result = TriggerEvaluate(LoadTriggerHandle(SUB_TABLE,mainEvent,subEvent)) /*
+            */ and TriggerEvaluate(LoadTriggerHandle(MAIN_TABLE,mainEvent,0))
+        set P_MAIN = pm
+        set P_SUB = ps
+        
+        return result
+    endfunction
+
+
+    function CustomEventRegister takes integer mainEvent, code c returns triggercondition
+        if not HaveSavedHandle(MAIN_TABLE,mainEvent,0) then
+            call SaveTriggerHandle(MAIN_TABLE,mainEvent,0,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(MAIN_TABLE,mainEvent,0),Condition(c))
+    endfunction
+    function CustomEventRegisterTypeId takes integer mainEvent, integer subEvent, code c returns triggercondition
+        if not HaveSavedHandle(SUB_TABLE,mainEvent,subEvent) then
+            call SaveTriggerHandle(SUB_TABLE,mainEvent,subEvent,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(SUB_TABLE,mainEvent,subEvent),Condition(c))
+    endfunction
+
+    
+    struct CustomEvent extends array
+        static CustomEventArg Arg
+        static CustomEventData Data
+    
+    
+        static method operator Index takes nothing returns integer
+            return I_ARG
+        endmethod
+        static method operator EventId takes nothing returns integer
+            return P_MAIN
+        endmethod
+        static method operator TypeId takes nothing returns integer
+            return P_SUB
+        endmethod
+        
+    
+        static method Register takes integer mainEvent, code c returns triggercondition
+            return CustomEventRegister(mainEvent,c)
+        endmethod
+        static method RegisterTypeId takes integer mainEvent, integer subEvent, code c returns triggercondition
+            return CustomEventRegisterTypeId(mainEvent,subEvent,c)
+        endmethod
+        
+    
+        static method Fire takes integer mainEvent returns boolean
+            return CustomEventFire(mainEvent)
+        endmethod
+        static method FireTypeId takes integer mainEvent, integer subEvent returns boolean
+            return CustomEventFireTypeId(mainEvent,subEvent)
+        endmethod
+    endstruct
+
+endlibrary
