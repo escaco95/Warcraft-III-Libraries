@@ -50,14 +50,18 @@
 library DanmakuSystem
     globals
         hashtable DANMAKU_HASHTABLE = InitHashtable()
-    //    integer DANMAKU_HANDLE = 0
+        /*
+        integer DANMAKU_HANDLE = 0
+        */
     endglobals
-    //function DanmakuHandleCheck takes handle h returns nothing
-    //    local integer id = GetHandleId(h)
-    //    if id > DANMAKU_HANDLE then
-    //        set DANMAKU_HANDLE = id
-    //    endif
-    //endfunction
+    /*
+    function DanmakuHandleCheck takes handle h returns nothing
+        local integer id = GetHandleId(h)
+        if id > DANMAKU_HANDLE then
+            set DANMAKU_HANDLE = id
+        endif
+    endfunction
+    */
 endlibrary
 /*
 ================================================================================
@@ -114,9 +118,11 @@ struct $NAME$
         set IG_ARG = parg
         set IG_THIS = pthis
         set this.IG_VUL = true
-        //call DanmakuHandleCheck(this.IG_ALLOCPRE)
-        //call DanmakuHandleCheck(this.IG_ALLOC)
-        //call DanmakuHandleCheck(this.IG_ALLOCPOST)
+        /*
+        call DanmakuHandleCheck(this.IG_ALLOCPRE)
+        call DanmakuHandleCheck(this.IG_ALLOC)
+        call DanmakuHandleCheck(this.IG_ALLOCPOST)
+        */
         return this
     endmethod
 endstruct
