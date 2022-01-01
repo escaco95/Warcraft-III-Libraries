@@ -1,0 +1,167 @@
+library DanmakuSystem
+    globals
+        hashtable DANMAKU_HASHTABLE = InitHashtable()
+    endglobals
+endlibrary
+
+//! textmacro 탄막 takes NAME
+struct $NAME$
+    private static thistype IN_THIS = 0
+    private trigger IN_ALLOC = CreateTrigger()
+    private trigger IN_ALLOCPOST = CreateTrigger()
+    private trigger IN_DEALLOC = CreateTrigger()
+    method destroy takes nothing returns nothing
+        local thistype pthis = IN_THIS
+        set IN_THIS = this
+        call TriggerEvaluate(this.IN_DEALLOC)
+        set IN_THIS = pthis
+        call DestroyTrigger(this.IN_ALLOC)
+        call DestroyTrigger(this.IN_ALLOCPOST)
+        call DestroyTrigger(this.IN_DEALLOC)
+        call this.deallocate()
+    endmethod
+    private static method InDebug takes nothing returns nothing
+//! endtextmacro
+
+    //! textmacro 탄막_타이머 takes NAME, TIMEOUT, PERIODIC
+    endmethod
+    timer $NAME$
+    private triggercondition IN$NAME$Tc = TriggerAddCondition(IN_ALLOC,function thistype.IN$NAME$OnCreate)
+    private triggercondition IN$NAME$Td = TriggerAddCondition(IN_DEALLOC,function thistype.IN$NAME$OnDestroy)
+    private static method IN$NAME$OnDestroy takes nothing returns nothing
+        local thistype this = IN_THIS
+        call PauseTimer(this.$NAME$)
+        call DestroyTimer(this.$NAME$)
+        set this.$NAME$ = null
+    endmethod
+    private static method IN$NAME$OnCreate takes nothing returns nothing
+        local thistype this = IN_THIS
+        set this.$NAME$ = CreateTimer()
+        call SaveInteger(DANMAKU_HASHTABLE,GetHandleId(this.$NAME$),0,this)
+        call TimerStart(this.$NAME$,$TIMEOUT$,$PERIODIC$,function thistype.IN$NAME$OnTick)
+    endmethod
+    private static method IN$NAME$OnTick takes nothing returns nothing
+        local thistype this = LoadInteger(DANMAKU_HASHTABLE,GetHandleId(GetExpiredTimer()),0)
+    //! endtextmacro
+    
+    //! textmacro 탄막_더미 takes NAME
+    endmethod
+    unit $NAME$
+    private triggercondition IN$NAME$Tc = TriggerAddCondition(IN_ALLOC,function thistype.IN$NAME$OnCreate)
+    private triggercondition IN$NAME$Td = TriggerAddCondition(IN_DEALLOC,function thistype.IN$NAME$OnDestroy)
+    private static method IN$NAME$OnDestroy takes nothing returns nothing
+        call KillUnit(IN_THIS.$NAME$)
+        set IN_THIS.$NAME$ = null
+    endmethod
+    private static method IN$NAME$OnCreate takes nothing returns nothing
+        local thistype this = IN_THIS
+    //! endtextmacro
+    
+    //! textmacro 탄막_더미_충돌 takes NAME, DUMMY, RADIUS
+    endmethod
+    trigger $NAME$
+    triggeraction $NAME$Action
+    private triggercondition IN$NAME$Tpc = TriggerAddCondition(IN_ALLOCPOST,function thistype.IN$NAME$OnPostCreate)
+    private triggercondition IN$NAME$Td = TriggerAddCondition(IN_DEALLOC,function thistype.IN$NAME$OnDestroy)
+    private static method IN$NAME$OnDestroy takes nothing returns nothing
+        local thistype this = IN_THIS
+        call TriggerRemoveAction(this.$NAME$,this.$NAME$Action)
+        call DestroyTrigger(this.$NAME$)
+        set this.$NAME$Action = null
+        set this.$NAME$ = null
+    endmethod
+    private static method IN$NAME$ProxyOnEnter takes nothing returns nothing
+        call IN$NAME$OnEnter(LoadInteger(DANMAKU_HASHTABLE,GetHandleId(GetTriggeringTrigger()),0))
+    endmethod
+    private static method IN$NAME$OnPostCreate takes nothing returns nothing
+        local thistype this = IN_THIS
+        set this.$NAME$ = CreateTrigger()
+        set this.$NAME$Action = TriggerAddAction(this.$NAME$,function thistype.IN$NAME$ProxyOnEnter)
+        call SaveInteger(DANMAKU_HASHTABLE,GetHandleId(this.$NAME$),0,this)
+        call TriggerRegisterUnitInRange(this.$NAME$,this.$DUMMY$,$RADIUS$,null)
+    endmethod
+    private static method IN$NAME$OnEnter takes thistype this returns nothing
+    //! endtextmacro
+    
+    //! textmacro 탄막_더미_사망 takes NAME, DUMMY
+    endmethod
+    trigger $NAME$
+    triggeraction $NAME$Action
+    private triggercondition IN$NAME$Tpc = TriggerAddCondition(IN_ALLOCPOST,function thistype.IN$NAME$OnPostCreate)
+    private triggercondition IN$NAME$Td = TriggerAddCondition(IN_DEALLOC,function thistype.IN$NAME$OnDestroy)
+    private static method IN$NAME$OnDestroy takes nothing returns nothing
+        local thistype this = IN_THIS
+        call TriggerRemoveAction(this.$NAME$,this.$NAME$Action)
+        call DestroyTrigger(this.$NAME$)
+        set this.$NAME$Action = null
+        set this.$NAME$ = null
+    endmethod
+    private static method IN$NAME$ProxyOnDeath takes nothing returns nothing
+        call IN$NAME$OnDeath(LoadInteger(DANMAKU_HASHTABLE,GetHandleId(GetTriggeringTrigger()),0))
+    endmethod
+    private static method IN$NAME$OnPostCreate takes nothing returns nothing
+        local thistype this = IN_THIS
+        set this.$NAME$ = CreateTrigger()
+        set this.$NAME$Action = TriggerAddAction(this.$NAME$,function thistype.IN$NAME$ProxyOnDeath)
+        call SaveInteger(DANMAKU_HASHTABLE,GetHandleId(this.$NAME$),0,this)
+        call TriggerRegisterUnitEvent(this.$NAME$,this.$DUMMY$,EVENT_UNIT_DEATH)
+    endmethod
+    private static method IN$NAME$OnDeath takes thistype this returns nothing
+    //! endtextmacro
+
+//! textmacro end탄막
+    endmethod
+    static method create takes nothing returns thistype
+        local thistype this = allocate()
+        local thistype pthis = IN_THIS
+        set IN_THIS = this
+        call TriggerEvaluate(this.IN_ALLOC)
+        call TriggerEvaluate(this.IN_ALLOCPOST)
+        set IN_THIS = pthis
+        return this
+    endmethod
+endstruct
+//! endtextmacro
+
+
+scope ESCTest initializer OnMapLoad
+
+//! runtextmacro 탄막("TestTan")
+
+    //! runtextmacro 탄막_타이머("Kill","5.0","false")
+        call KillUnit(this.Dummy1)
+        
+    //! runtextmacro 탄막_타이머("Loop","0.03125","true")
+        local real f = GetUnitFacing(this.Dummy1) * bj_DEGTORAD
+        call SetUnitX(this.Dummy1,GetUnitX(this.Dummy1)+3.0*Cos(f))
+        call SetUnitY(this.Dummy1,GetUnitY(this.Dummy1)+3.0*Sin(f))
+        
+    //! runtextmacro 탄막_더미("Dummy1")
+        set this.Dummy1 = CreateUnit(Player(0),'hfoo',-6654.0,6400.0,GetRandomDirectionDeg())
+        
+    //! runtextmacro 탄막_더미_충돌("Hit","Dummy1","50.0")
+        local unit u = GetEnteringUnit()
+        if GetUnitTypeId(u) != 'hfoo' then
+            call KillUnit(u)
+            call KillUnit(this.Dummy1)
+        endif
+        set u = null
+        
+    //! runtextmacro 탄막_더미_사망("Death","Dummy1")
+        call BJDebugMsg("죽1음")
+        call this.destroy()
+        
+//! runtextmacro end탄막()
+
+private function OnESC takes nothing returns nothing
+    call TestTan.create()
+endfunction
+
+private function OnMapLoad takes nothing returns nothing
+    local trigger t = CreateTrigger()
+    call TriggerRegisterPlayerEvent(t,Player(0),EVENT_PLAYER_END_CINEMATIC)
+    call TriggerAddAction(t,function OnESC)
+    set t = null
+endfunction
+
+endscope
