@@ -123,6 +123,8 @@ struct $NAME$
 endstruct
 //! endtextmacro
 
+/*
+    예제
 
 scope ESCTest initializer OnMapLoad
 
@@ -165,3 +167,4 @@ private function OnMapLoad takes nothing returns nothing
 endfunction
 
 endscope
+*/
