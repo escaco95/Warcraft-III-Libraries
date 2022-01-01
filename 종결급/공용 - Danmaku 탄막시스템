@@ -2,6 +2,10 @@
 ================================================================================
     탄막시스템
         
+        - [1.11]
+            * 최적화
+                - 즉각적인 null을 통해 탐욕적인 최적화 방식을 채택하도록 수정.
+        
         - [1.10] 1차 업데이트
             * 문법 개선
                 - .destroy를 남발하는 바람에 이중 파괴, 처리 중도 파괴가 되어버리면
@@ -25,7 +29,7 @@
                     - 탄막_실수("요소명칭X","초기값X") 3번 쓰는것보다 코드량도 적고 속도도 빠릅니다.
         
         - [1.00] 출시
-            * 문법 추가
+            * 기초 문법 추가
                 //! runtextmacro 탄막("탄막명")
                 //! runtextmacro end탄막()
             * 요소 추가
@@ -46,7 +50,14 @@
 library DanmakuSystem
     globals
         hashtable DANMAKU_HASHTABLE = InitHashtable()
+    //    integer DANMAKU_HANDLE = 0
     endglobals
+    //function DanmakuHandleCheck takes handle h returns nothing
+    //    local integer id = GetHandleId(h)
+    //    if id > DANMAKU_HANDLE then
+    //        set DANMAKU_HANDLE = id
+    //    endif
+    //endfunction
 endlibrary
 /*
 ================================================================================
@@ -78,6 +89,10 @@ struct $NAME$
         call DestroyTrigger(this.IG_ALLOC)
         call DestroyTrigger(this.IG_ALLOCPOST)
         call DestroyTrigger(this.IG_DEALLOC)
+        set this.IG_ALLOCPRE = null
+        set this.IG_ALLOC = null
+        set this.IG_ALLOCPOST = null
+        set this.IG_DEALLOC = null
         call this.deallocate()
     endmethod
     private static method IGDoNothing takes nothing returns nothing
@@ -99,6 +114,9 @@ struct $NAME$
         set IG_ARG = parg
         set IG_THIS = pthis
         set this.IG_VUL = true
+        //call DanmakuHandleCheck(this.IG_ALLOCPRE)
+        //call DanmakuHandleCheck(this.IG_ALLOC)
+        //call DanmakuHandleCheck(this.IG_ALLOCPOST)
         return this
     endmethod
 endstruct
@@ -139,6 +157,8 @@ private triggercondition IN$NAME$Tbc = TriggerAddCondition(IG_ALLOCPRE,function 
 private triggercondition IN$NAME$Td = TriggerAddCondition(IG_DEALLOC,function thistype.IN$NAME$OnDestroy)
 private static method IN$NAME$OnDestroy takes nothing returns nothing
     set IG_THIS.$NAME$ = null
+    set IG_THIS.IN$NAME$Tbc = null
+    set IG_THIS.IN$NAME$Td = null
 endmethod
 static method Set$NAME$ takes unit v returns nothing
     set IF$NAME$[IG_LEVEL] = true
@@ -222,6 +242,8 @@ private static method IN$NAME$OnDestroy takes nothing returns nothing
     call PauseTimer(this.$NAME$)
     call DestroyTimer(this.$NAME$)
     set this.$NAME$ = null
+    set this.IN$NAME$Tc = null
+    set this.IN$NAME$Td = null
 endmethod
 private static method IN$NAME$OnCreate takes nothing returns nothing
     local thistype this = IG_THIS
@@ -241,6 +263,8 @@ private triggercondition IN$NAME$Td = TriggerAddCondition(IG_DEALLOC,function th
 private static method IN$NAME$OnDestroy takes nothing returns nothing
     call KillUnit(IG_THIS.$NAME$)
     set IG_THIS.$NAME$ = null
+    set IG_THIS.IN$NAME$Tc = null
+    set IG_THIS.IN$NAME$Td = null
 endmethod
 private static method IN$NAME$OnCreate takes nothing returns nothing
     local thistype this = IG_THIS
@@ -258,6 +282,8 @@ private static method IN$NAME$OnDestroy takes nothing returns nothing
     call DestroyTrigger(this.$NAME$)
     set this.$NAME$Action = null
     set this.$NAME$ = null
+    set this.IN$NAME$Tpc = null
+    set this.IN$NAME$Td = null
 endmethod
 private static method IN$NAME$ProxyOnEnter takes nothing returns nothing
     call IN$NAME$OnEnter(LoadInteger(DANMAKU_HASHTABLE,GetHandleId(GetTriggeringTrigger()),0))
@@ -284,6 +310,8 @@ private static method IN$NAME$OnDestroy takes nothing returns nothing
     call DestroyTrigger(this.$NAME$)
     set this.$NAME$Action = null
     set this.$NAME$ = null
+    set this.IN$NAME$Tpc = null
+    set this.IN$NAME$Td = null
 endmethod
 private static method IN$NAME$ProxyOnDeath takes nothing returns nothing
     call IN$NAME$OnDeath(LoadInteger(DANMAKU_HASHTABLE,GetHandleId(GetTriggeringTrigger()),0))
