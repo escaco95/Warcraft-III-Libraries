@@ -1,10 +1,25 @@
-# 최고의 조합
+# 최고의 조합 추천
 
 ### 타이머 / 범위 처리 / 좌표계산
-Struct FX + Impact + Angle Distance Polar
-> 장점
+
+`Struct FX` + `Impact` + `Angle Distance Polar`
+
+> **장점**
 > - 제작자의 소스 코드 작성 피로도 **대폭 감소**
-> 단점
-> - Struct FX / Impact 라이브러리의 실전 안정성 표본 확보가 저조함
+> - 다양한 맵으로 우수성이 검증된 `Angle Distance Polar`
+
+> **단점**
+> - `Struct FX` & `Impact` 라이브러리의 실전 안정성 표본 확보가 저조함
+
+
 ### 정적 후원혜택관리 / 유저관리
-UniqueStringHash
+
+`UniqueStringHash`
+
+> **장점**
+> - *StringHash()* 와 다르게 결과가 겹치지 않음
+> - 서로 다른 유저로부터 발생하는 중복 StringHash로 인한 모든 내재적 결함으로부터 ***완전한 자유 확보***
+
+> **단점**
+> - 1000년 연속 로또 1등에 당첨될 확률로 게임이 터질 가능성이 있음
+> - *이론적으로* ***42억*** 종류의 서로 다른 문자열을 해싱하게 되면, 더 이상 새로운 종류의 문자열을 해싱할 수 없음.
