@@ -369,7 +369,7 @@ struct Impact extends array
         set eP = pp
         set pc = null
     endmethod
-    static method InGroup takes group g, code c returns nothing
+    static method ToGroup takes group g, code c returns nothing
         local code pc = eC
         local integer pp = eP
         set eP = gA
