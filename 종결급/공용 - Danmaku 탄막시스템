@@ -2,6 +2,20 @@
 ================================================================================
     탄막시스템
         
+        - [1.12]
+            * 요소 추가
+                //! runtextmacro 탄막_논리값("요소명칭","초기값")
+                    - 탄막에 논리값(boolean) 속성을 부여합니다.
+                //! runtextmacro 탄막_정수("요소명칭","초기값")
+                    - 탄막에 정수(integer) 속성을 부여합니다.
+                //! runtextmacro 탄막_플레이어유닛("요소명칭","플레이어초기값","유닛초기값")
+                    - 탄막에 유닛과 그 소유주의 속성을 부여합니다.
+                    - this.요소명칭 = 유닛
+                    - this.요소명칭Owner = 소유주
+                //! runtextmacro 탄막_공통액션("요소명칭")
+                    - 소스 코드의 반복 작성을 줄이기 위해 공통액션용 함수를 선언합니다.
+                    - call this.요소명칭()
+        
         - [1.11]
             * 최적화
                 - 즉각적인 null을 통해 탐욕적인 최적화 방식을 채택하도록 수정.
@@ -129,9 +143,53 @@ endstruct
 //! endtextmacro
 /*
 ================================================================================
-    탄막 요소
+    탄막 요소 - Pre Allocation 계층
 --------------------------------------------------------------------------------
 */
+//! textmacro 탄막_논리값 takes NAME, DEFAULT
+endmethod
+boolean $NAME$
+static boolean array IN$NAME$
+static boolean array IF$NAME$
+private triggercondition IN$NAME$Tbc = TriggerAddCondition(IG_ALLOCPRE,function thistype.IN$NAME$OnPreCreate)
+static method Set$NAME$ takes boolean v returns nothing
+    set IF$NAME$[IG_LEVEL] = true
+    set IN$NAME$[IG_LEVEL] = v
+endmethod
+private static method IN$NAME$OnPreCreate takes nothing returns nothing
+    local thistype this = IG_THIS
+    local integer arg = IG_ARG
+    if IF$NAME$[arg] then
+        set IF$NAME$[arg] = false
+        set this.$NAME$ = IN$NAME$[arg]
+    else
+        set this.$NAME$ = $DEFAULT$
+    endif
+endmethod
+private static method IN$NAME$DoNothing takes nothing returns nothing
+//! endtextmacro
+//! textmacro 탄막_정수 takes NAME, DEFAULT
+endmethod
+integer $NAME$
+static integer array IN$NAME$
+static boolean array IF$NAME$
+private triggercondition IN$NAME$Tbc = TriggerAddCondition(IG_ALLOCPRE,function thistype.IN$NAME$OnPreCreate)
+static method Set$NAME$ takes integer v returns nothing
+    set IF$NAME$[IG_LEVEL] = true
+    set IN$NAME$[IG_LEVEL] = v
+endmethod
+private static method IN$NAME$OnPreCreate takes nothing returns nothing
+    local thistype this = IG_THIS
+    local integer arg = IG_ARG
+    if IF$NAME$[arg] then
+        set IF$NAME$[arg] = false
+        set this.$NAME$ = IN$NAME$[arg]
+    else
+        set this.$NAME$ = $DEFAULT$
+    endif
+endmethod
+private static method IN$NAME$DoNothing takes nothing returns nothing
+//! endtextmacro
 //! textmacro 탄막_실수 takes NAME, DEFAULT
 endmethod
 real $NAME$
@@ -205,6 +263,40 @@ private static method IN$NAME$OnPreCreate takes nothing returns nothing
 endmethod
 private static method IN$NAME$DoNothing takes nothing returns nothing
 //! endtextmacro
+//! textmacro 탄막_플레이어유닛 takes NAME, DEFAULTP, DEFAULTU
+endmethod
+unit $NAME$
+player $NAME$Owner
+static unit array IN$NAME$
+static player array IN$NAME$Owner
+static boolean array IF$NAME$
+private triggercondition IN$NAME$Tbc = TriggerAddCondition(IG_ALLOCPRE,function thistype.IN$NAME$OnPreCreate)
+private triggercondition IN$NAME$Td = TriggerAddCondition(IG_DEALLOC,function thistype.IN$NAME$OnDestroy)
+private static method IN$NAME$OnDestroy takes nothing returns nothing
+    set IG_THIS.$NAME$ = null
+    set IG_THIS.IN$NAME$Tbc = null
+    set IG_THIS.IN$NAME$Td = null
+endmethod
+static method Set$NAME$ takes unit v returns nothing
+    set IF$NAME$[IG_LEVEL] = true
+    set IN$NAME$[IG_LEVEL] = v
+    set IN$NAME$Owner[IG_LEVEL] = GetOwningPlayer(v)
+endmethod
+private static method IN$NAME$OnPreCreate takes nothing returns nothing
+    local thistype this = IG_THIS
+    local integer arg = IG_ARG
+    if IF$NAME$[arg] then
+        set IF$NAME$[arg] = false
+        set this.$NAME$ = IN$NAME$[arg]
+        set this.$NAME$Owner = IN$NAME$Owner[arg]
+        set IN$NAME$[arg] = null
+    else
+        set this.$NAME$ = $DEFAULTU$
+        set this.$NAME$Owner = $DEFAULTP$
+    endif
+endmethod
+private static method IN$NAME$DoNothing takes nothing returns nothing
+//! endtextmacro
 //! textmacro 탄막_좌표 takes NAME, DEFAULTX, DEFAULTY, DEFAULTZ
 endmethod
 real $NAME$X
@@ -237,7 +329,11 @@ private static method IN$NAME$OnPreCreate takes nothing returns nothing
 endmethod
 private static method IN$NAME$DoNothing takes nothing returns nothing
 //! endtextmacro
-
+/*
+================================================================================
+    탄막 요소 - Allocation 계층
+--------------------------------------------------------------------------------
+*/
 //! textmacro 탄막_타이머 takes NAME, TIMEOUT, PERIODIC
 endmethod
 timer $NAME$
@@ -260,7 +356,6 @@ endmethod
 private static method IN$NAME$OnTick takes nothing returns nothing
     local thistype this = LoadInteger(DANMAKU_HASHTABLE,GetHandleId(GetExpiredTimer()),0)
 //! endtextmacro
-
 //! textmacro 탄막_더미 takes NAME
 endmethod
 unit $NAME$
@@ -275,7 +370,11 @@ endmethod
 private static method IN$NAME$OnCreate takes nothing returns nothing
     local thistype this = IG_THIS
 //! endtextmacro
-
+/*
+================================================================================
+    탄막 요소 - Post Allocation 계층
+--------------------------------------------------------------------------------
+*/
 //! textmacro 탄막_더미_충돌 takes NAME, DUMMY, RADIUS
 endmethod
 trigger $NAME$
@@ -303,7 +402,6 @@ private static method IN$NAME$OnPostCreate takes nothing returns nothing
 endmethod
 private static method IN$NAME$OnEnter takes thistype this returns nothing
 //! endtextmacro
-
 //! textmacro 탄막_더미_사망 takes NAME, DUMMY
 endmethod
 trigger $NAME$
@@ -330,4 +428,13 @@ private static method IN$NAME$OnPostCreate takes nothing returns nothing
     call TriggerRegisterUnitEvent(this.$NAME$,this.$DUMMY$,EVENT_UNIT_DEATH)
 endmethod
 private static method IN$NAME$OnDeath takes thistype this returns nothing
+//! endtextmacro
+/*
+================================================================================
+    탄막 요소 - 자유 계층
+--------------------------------------------------------------------------------
+*/
+//! textmacro 탄막_공통액션 takes NAME
+endmethod
+private method $NAME$ takes nothing returns nothing
 //! endtextmacro
