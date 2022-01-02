@@ -1,0 +1,433 @@
+/*
+================================================================================
+    임팩트 라이브러리 1.4
+    
+        적용 도메인
+            - 범위 피해? 범위 버프 부여? 범위 효과를 주고 싶은데...
+            - 처리 속도가 느려도 좋으니까 소스 코드를 짧게 관리했으면 좋겠어요!
+            
+        장점
+            - 최소화된 소스 코드로, 제작자가 실제 기능 구현에 집중할 수 있습니다.
+            
+        적용 시 리스크
+            - 처리 속도가 꽤 느립니다.
+                Enum + FirstOfGroup         = 가장 빠른 조합 (지역 변수 공유 가능)
+                Enum + Filter               = 평균
+                Enum + ForGroup             = 느림
+                Enum + Filter + ForForce    = 개 느림 (Impact)
+            - 깊은 중첩 사용에 대한 안정성이 충분히 보장되지 않았습니다.
+            - 다양한 실전 적용 사례가 부족합니다.
+        
+        리스크 대응 방법
+            - 고속 처리가 필요한 곳은 Impact 대신 기존에 쓰시던 방법을 사용하세요.
+            - Impact 적용 전에 아래와 같은 사항을 준수합니다.
+                1. 기존 코드 백업해두기
+                2. 페이탈 폭증, 또는 범위 판정과 관련된 버그 발생 시 escaco95@naver.com 문의
+                3. 기존 코드로 되돌리고 나서 문의 답변 기다리기!
+        
+--------------------------------------------------------------------------------
+    업데이트 로그
+    
+        [1.4]
+            - 기능추가: Impact.ToGroup(g,function)
+    
+        [1.3]
+            - 내부 코드 최적화 및 문서 단위 주석 작성
+            - 기능추가: Impact.ToForce(f,function)
+            - 기능추가: Impact.ToAll(function)
+                모든 플레이어의 유닛에게 광역 효과 시전. 겁 나 무 겁 습 니 다!
+        
+        [1.2]
+            - (Set & Get) 구조를 (Use & Get & Set) 구조로 변경
+                Set -> Use: 맨 처음 임팩트 데이터를 세팅할 때 
+                Get -> Get: 세팅된 임팩트 정보를 가져올 때   
+                (X) -> Set: 세팅된 임팩트 정보를 '변경'할 때
+            - string, force, timer, group 사용 가능
+    
+        [1.1]
+            - 축약어 버전 추가
+                SetInt -> Si
+                SetItem -> SI (핸들은 대문자 축약어를 갖습니다)
+                GetInt -> Gi
+            - 이름변경: Impact.InRange(x,y,r,function)
+            - 기능추가: Impact.InWidgetRange(w,r,function)
+            - 기능추가: Impact.InRect(r,function)
+            - 기능추가: Impact.ToPlayer(p,function)
+    
+        [1.0]
+            - 랜능탱에 정식 사용
+            - int, bool, real, unit, item, player 인자로 전달 가능
+            - 전달된 인자는 get만 가능
+            - Impact.Range(x,y,r,function)
+    
+--------------------------------------------------------------------------------
+*/
+library Impact
+/*
+================================================================================
+    변수 세팅
+--------------------------------------------------------------------------------
+        워크래프트는 인터프리트 언어라서,
+        변수나 함수 이름이 짧을수록 더 빨리 처리됩니다.
+*/
+globals
+    /* 단일 개체 */
+    private hashtable   iH = InitHashtable()
+    private group       iG = CreateGroup()
+    private boolexpr    iF = null
+    private force       iP = null
+    /* 전역 개체 */
+    private integer     gA = 1
+    /* 이벤트 개체 */
+    private code        eC = null
+    private unit        eU = null
+    private integer     eP = 0
+endglobals
+/*
+================================================================================
+    핵심 Enumeration 로직
+--------------------------------------------------------------------------------
+        Proxy(fP) - Function(fE) 패턴
+*/
+private function fE takes unit u, unit pu returns boolean
+    set eU = u
+    call ForForce(iP,eC)
+    set eU = pu
+    return false
+endfunction
+private function fP takes nothing returns boolean
+    return fE(GetFilterUnit(),eU)
+endfunction
+private function fF takes nothing returns nothing
+    call fE(GetEnumUnit(),eU)
+endfunction
+/*
+================================================================================
+    초기화 모듈
+--------------------------------------------------------------------------------
+        vJass의 초기화 순서는
+            1. module
+            2. struct
+            3. library initializer
+            4. scope initializer
+        입니다.
+*/
+private module mI
+    private static method onInit takes nothing returns nothing
+        set iF = Filter(function fP)
+        set iP = bj_FORCE_PLAYER[0]
+    endmethod
+endmodule
+private struct sI extends array
+    implement mI
+endstruct
+/*
+================================================================================
+    API - 구조체 인터페이스
+--------------------------------------------------------------------------------
+        Impact 시스템을 구조체로 다루는 인터페이스입니다.
+*/
+struct Impact extends array
+    /*
+    ----------------------------------------------------------------------------
+        단문 버전
+    ----------------------------------------------------------------------------
+            숙련된 제작자의 코딩 편의성을 위한 '단문 버전' 입니다.
+    */
+    static method operator T takes nothing returns unit
+        return eU
+    endmethod
+    
+    static method Ui takes integer k, integer v returns nothing
+        call SaveInteger(iH,gA,k,v)
+    endmethod
+    static method Ur takes integer k, real v returns nothing
+        call SaveReal(iH,gA,k,v)
+    endmethod
+    static method Ub takes integer k, boolean v returns nothing
+        call SaveBoolean(iH,gA,k,v)
+    endmethod
+    static method Us takes integer k, string v returns nothing
+        call SaveStr(iH,gA,k,v)
+    endmethod
+    static method UP takes integer k, player v returns nothing
+        call SavePlayerHandle(iH,gA,k,v)
+    endmethod
+    static method UU takes integer k, unit v returns nothing
+        call SaveUnitHandle(iH,gA,k,v)
+    endmethod
+    static method UI takes integer k, item v returns nothing
+        call SaveItemHandle(iH,gA,k,v)
+    endmethod
+    static method UT takes integer k, timer v returns nothing
+        call SaveTimerHandle(iH,gA,k,v)
+    endmethod
+    static method UF takes integer k, force v returns nothing
+        call SaveForceHandle(iH,gA,k,v)
+    endmethod
+    static method UG takes integer k, group v returns nothing
+        call SaveGroupHandle(iH,gA,k,v)
+    endmethod
+    
+    static method Si takes integer k, integer v returns nothing
+        call SaveInteger(iH,eP,k,v)
+    endmethod
+    static method Sr takes integer k, real v returns nothing
+        call SaveReal(iH,eP,k,v)
+    endmethod
+    static method Sb takes integer k, boolean v returns nothing
+        call SaveBoolean(iH,eP,k,v)
+    endmethod
+    static method Ss takes integer k, string v returns nothing
+        call SaveStr(iH,eP,k,v)
+    endmethod
+    static method SP takes integer k, player v returns nothing
+        call SavePlayerHandle(iH,eP,k,v)
+    endmethod
+    static method SU takes integer k, unit v returns nothing
+        call SaveUnitHandle(iH,eP,k,v)
+    endmethod
+    static method SI takes integer k, item v returns nothing
+        call SaveItemHandle(iH,eP,k,v)
+    endmethod
+    static method ST takes integer k, timer v returns nothing
+        call SaveTimerHandle(iH,eP,k,v)
+    endmethod
+    static method SF takes integer k, force v returns nothing
+        call SaveForceHandle(iH,eP,k,v)
+    endmethod
+    static method SG takes integer k, group v returns nothing
+        call SaveGroupHandle(iH,eP,k,v)
+    endmethod
+    
+    static method Gi takes integer k returns integer
+        return LoadInteger(iH,eP,k)
+    endmethod
+    static method Gr takes integer k returns real
+        return LoadReal(iH,eP,k)
+    endmethod
+    static method Gb takes integer k returns boolean
+        return LoadBoolean(iH,eP,k)
+    endmethod
+    static method Gs takes integer k returns string
+        return LoadStr(iH,eP,k)
+    endmethod
+    static method GP takes integer k returns player
+        return LoadPlayerHandle(iH,eP,k)
+    endmethod
+    static method GU takes integer k returns unit
+        return LoadUnitHandle(iH,eP,k)
+    endmethod
+    static method GI takes integer k returns item
+        return LoadItemHandle(iH,eP,k)
+    endmethod
+    static method GT takes integer k returns timer
+        return LoadTimerHandle(iH,eP,k)
+    endmethod
+    static method GF takes integer k returns force
+        return LoadForceHandle(iH,eP,k)
+    endmethod
+    static method GG takes integer k returns group
+        return LoadGroupHandle(iH,eP,k)
+    endmethod
+    /*
+    ----------------------------------------------------------------------------
+        전문 버전
+    ----------------------------------------------------------------------------
+            각 기능의 의미가 명확하게 드러난 일반 버전 입니다.
+    */
+    static method operator Target takes nothing returns unit
+        return eU
+    endmethod
+    
+    static method UseInt takes integer k, integer v returns nothing
+        call SaveInteger(iH,gA,k,v)
+    endmethod
+    static method UseReal takes integer k, real v returns nothing
+        call SaveReal(iH,gA,k,v)
+    endmethod
+    static method UseBool takes integer k, boolean v returns nothing
+        call SaveBoolean(iH,gA,k,v)
+    endmethod
+    static method UseStr takes integer k, string v returns nothing
+        call SaveStr(iH,gA,k,v)
+    endmethod
+    static method UsePlayer takes integer k, player v returns nothing
+        call SavePlayerHandle(iH,gA,k,v)
+    endmethod
+    static method UseUnit takes integer k, unit v returns nothing
+        call SaveUnitHandle(iH,gA,k,v)
+    endmethod
+    static method UseItem takes integer k, item v returns nothing
+        call SaveItemHandle(iH,gA,k,v)
+    endmethod
+    static method UseTimer takes integer k, timer v returns nothing
+        call SaveTimerHandle(iH,gA,k,v)
+    endmethod
+    static method UseForce takes integer k, force v returns nothing
+        call SaveForceHandle(iH,gA,k,v)
+    endmethod
+    static method UseGroup takes integer k, group v returns nothing
+        call SaveGroupHandle(iH,gA,k,v)
+    endmethod
+    
+    static method SetInt takes integer k, integer v returns nothing
+        call SaveInteger(iH,eP,k,v)
+    endmethod
+    static method SetReal takes integer k, real v returns nothing
+        call SaveReal(iH,eP,k,v)
+    endmethod
+    static method SetBool takes integer k, boolean v returns nothing
+        call SaveBoolean(iH,eP,k,v)
+    endmethod
+    static method SetStr takes integer k, string v returns nothing
+        call SaveStr(iH,eP,k,v)
+    endmethod
+    static method SetPlayer takes integer k, player v returns nothing
+        call SavePlayerHandle(iH,eP,k,v)
+    endmethod
+    static method SetUnit takes integer k, unit v returns nothing
+        call SaveUnitHandle(iH,eP,k,v)
+    endmethod
+    static method SetItem takes integer k, item v returns nothing
+        call SaveItemHandle(iH,eP,k,v)
+    endmethod
+    static method SetTimer takes integer k, timer v returns nothing
+        call SaveTimerHandle(iH,eP,k,v)
+    endmethod
+    static method SetForce takes integer k, force v returns nothing
+        call SaveForceHandle(iH,eP,k,v)
+    endmethod
+    static method SetGroup takes integer k, group v returns nothing
+        call SaveGroupHandle(iH,eP,k,v)
+    endmethod
+    
+    static method GetInt takes integer k returns integer
+        return LoadInteger(iH,eP,k)
+    endmethod
+    static method GetReal takes integer k returns real
+        return LoadReal(iH,eP,k)
+    endmethod
+    static method GetBool takes integer k returns boolean
+        return LoadBoolean(iH,eP,k)
+    endmethod
+    static method GetStr takes integer k returns string
+        return LoadStr(iH,eP,k)
+    endmethod
+    static method GetPlayer takes integer k returns player
+        return LoadPlayerHandle(iH,eP,k)
+    endmethod
+    static method GetUnit takes integer k returns unit
+        return LoadUnitHandle(iH,eP,k)
+    endmethod
+    static method GetItem takes integer k returns item
+        return LoadItemHandle(iH,eP,k)
+    endmethod
+    static method GetTimer takes integer k returns timer
+        return LoadTimerHandle(iH,eP,k)
+    endmethod
+    static method GetForce takes integer k returns force
+        return LoadForceHandle(iH,eP,k)
+    endmethod
+    static method GetGroup takes integer k returns group
+        return LoadGroupHandle(iH,eP,k)
+    endmethod
+    
+    static method InRange takes real x, real y, real r, code c returns nothing
+        local code pc = eC
+        local integer pp = eP
+        set eP = gA
+        set gA = gA + 1
+        set eC = c
+        call GroupEnumUnitsInRange(iG,x,y,r,iF)
+        call FlushChildHashtable(iH,eP)
+        set eC = pc
+        set eP = pp
+        set pc = null
+    endmethod
+    static method InWidgetRange takes widget w, real r, code c returns nothing
+        local code pc = eC
+        local integer pp = eP
+        set eP = gA
+        set gA = gA + 1
+        set eC = c
+        call GroupEnumUnitsInRange(iG,GetWidgetX(w),GetWidgetY(w),r,iF)
+        call FlushChildHashtable(iH,eP)
+        set eC = pc
+        set eP = pp
+        set pc = null
+    endmethod
+    static method InRect takes rect r, code c returns nothing
+        local code pc = eC
+        local integer pp = eP
+        set eP = gA
+        set gA = gA + 1
+        set eC = c
+        call GroupEnumUnitsInRect(iG,r,iF)
+        call FlushChildHashtable(iH,eP)
+        set eC = pc
+        set eP = pp
+        set pc = null
+    endmethod
+    static method InGroup takes group g, code c returns nothing
+        local code pc = eC
+        local integer pp = eP
+        set eP = gA
+        set gA = gA + 1
+        set eC = c
+        call ForGroup(g,function fF)
+        call FlushChildHashtable(iH,eP)
+        set eC = pc
+        set eP = pp
+        set pc = null
+    endmethod
+    static method ToPlayer takes player p, code c returns nothing
+        local code pc = eC
+        local integer pp = eP
+        set eP = gA
+        set gA = gA + 1
+        set eC = c
+        call GroupEnumUnitsOfPlayer(iG,p,iF)
+        call FlushChildHashtable(iH,eP)
+        set eC = pc
+        set eP = pp
+        set pc = null
+    endmethod
+    static method ToForce takes force f, code c returns nothing
+        local code pc = eC
+        local integer pp = eP
+        local integer i = 0
+        set eP = gA
+        set gA = gA + 1
+        set eC = c
+        loop
+            exitwhen i == bj_MAX_PLAYER_SLOTS
+            if IsPlayerInForce(Player(i),f) then
+                call GroupEnumUnitsOfPlayer(iG,Player(i),iF)
+            endif
+            set i = i + 1
+        endloop
+        call FlushChildHashtable(iH,eP)
+        set eC = pc
+        set eP = pp
+        set pc = null
+    endmethod
+    static method ToAllPlayers takes code c returns nothing
+        local code pc = eC
+        local integer pp = eP
+        local integer i = 0
+        set eP = gA
+        set gA = gA + 1
+        set eC = c
+        loop
+            exitwhen i == bj_MAX_PLAYER_SLOTS
+            call GroupEnumUnitsOfPlayer(iG,Player(i),iF)
+            set i = i + 1
+        endloop
+        call FlushChildHashtable(iH,eP)
+        set eC = pc
+        set eP = pp
+        set pc = null
+    endmethod
+endstruct
+endlibrary
