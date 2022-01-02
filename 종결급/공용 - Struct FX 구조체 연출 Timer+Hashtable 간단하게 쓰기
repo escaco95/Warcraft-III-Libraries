@@ -1,0 +1,152 @@
+/*
+================================================================================
+    Struct FX(구조체 연출) 라이브러리 1.1
+    
+        적용 도메인
+            - 어후 타이머로 반복 효과 만들어서 관리하기 너무 귀찮네요...
+            - 처리 속도가 느려도 좋으니까 소스 코드를 짧게 관리했으면 좋겠어요!
+            
+        장점
+            - 최소화된 소스 코드로, 제작자가 실제 기능 구현에 집중할 수 있습니다.
+            
+        적용 시 리스크
+            - 내부적으로 해시테이블을 사용하기 때문에, 부하량이 제법 됩니다.
+            - 다양한 실전 적용 사례가 부족합니다.
+        
+        리스크 대응 방법
+            - 고속 처리가 필요한 곳은 Struct FX 대신 기존에 쓰시던 방법을 사용하세요.
+            - Struct FX 적용 전에 아래와 같은 사항을 준수합니다.
+                1. 기존 코드 백업해두기
+                2. 페이탈 폭증, 또는 연출과 관련된 버그 발생 시 escaco95@naver.com 문의
+                3. 기존 코드로 되돌리고 나서 문의 답변 기다리기!
+        
+--------------------------------------------------------------------------------
+    업데이트 로그
+    
+        [1.1]
+            - 필수 메소드가 선언되어 있지 않으면 맵 저장 시 error 출력 기능 추가
+                private method onCreate takes nothing returns nothing
+                private method onStart takes nothing returns nothing
+                private method onTick takes nothing returns nothing
+                private method onStop takes nothing returns nothing
+    
+        [1.0]
+            - 정식 배포
+            - 정수, 실수, 유닛, 플레이어 멤버로 사용 가능
+            - create() / destroy() / start() 기능 제공
+            - 마지막으로 생성된 친구는 .new 로 참조 가능
+    
+--------------------------------------------------------------------------------
+*/
+library SFX
+globals
+    hashtable SFX_TABLE = InitHashtable()
+endglobals
+endlibrary
+/*
+================================================================================
+    struct를 구조체 연출로 전환
+--------------------------------------------------------------------------------
+        struct 선언문의 가장 아래쪽에 이 텍스트매크로를 사용하면,
+        그 struct는 구조체 연출 객체가 됩니다.
+*/
+//! textmacro 연출 takes TIMEOUT
+static thistype new = 0
+private static key KEY_exists
+private static key KEY_timer
+static method create takes nothing returns thistype
+    local timer t = CreateTimer()
+    local thistype this = GetHandleId(t)
+    set new = this
+    call SaveTimerHandle(SFX_TABLE,this,KEY_timer,t)
+    set t = null
+static if thistype.onCreate.exists then
+    call this.onCreate()
+else
+    error MethodRequiredException onCreate
+endif
+    call SaveBoolean(SFX_TABLE,this,KEY_exists,true)
+    return this
+endmethod
+method destroy takes nothing returns nothing
+    local timer t
+    if not LoadBoolean(SFX_TABLE,this,KEY_exists) then
+        return
+    endif
+    call RemoveSavedBoolean(SFX_TABLE,this,KEY_exists)
+    set t = LoadTimerHandle(SFX_TABLE,this,KEY_timer)
+    call PauseTimer(t)
+static if thistype.onStop.exists then
+    call this.onStop()
+else
+    error MethodRequiredException onStop
+endif
+    call FlushChildHashtable(SFX_TABLE,this)
+    call DestroyTimer(t)
+    set t = null
+endmethod
+private static method SFXTick takes nothing returns nothing
+    local thistype this = GetHandleId(GetExpiredTimer())
+static if thistype.onTick.exists then
+    call this.onTick()
+else
+    error MethodRequiredException onTick
+endif
+endmethod
+method start takes nothing returns nothing
+    if not LoadBoolean(SFX_TABLE,this,KEY_exists) then
+        return
+    endif
+static if thistype.onStart.exists then
+    call this.onStart()
+else
+    error MethodRequiredException onStart
+endif
+    call TimerStart(LoadTimerHandle(SFX_TABLE,this,KEY_timer),$TIMEOUT$,true,function thistype.SFXTick)
+endmethod
+//! endtextmacro
+/*
+================================================================================
+    구조체 속성 관리
+--------------------------------------------------------------------------------
+        구조체 연출은 매우 안전한 Timer Handle Id - Hashtable 방식을 사용하기 때문에
+        일반적인 방법으로 구조체 멤버 변수를 선언하면 정상적으로 동작하지 않습니다.
+        
+        반드시 아래 주어진 텍스트매크로로 멤버 변수를 선언해 주세요!
+*/
+//! textmacro 연출_정수 takes NAME
+private static key KEY_$NAME$
+method operator $NAME$= takes integer v returns nothing
+    call SaveInteger(SFX_TABLE,this,KEY_$NAME$,v)
+endmethod
+method operator $NAME$ takes nothing returns integer
+    return LoadInteger(SFX_TABLE,this,KEY_$NAME$)
+endmethod
+//! endtextmacro
+//! textmacro 연출_실수 takes NAME
+private static key KEY_$NAME$
+method operator $NAME$= takes real v returns nothing
+    call SaveReal(SFX_TABLE,this,KEY_$NAME$,v)
+endmethod
+method operator $NAME$ takes nothing returns real
+    return LoadReal(SFX_TABLE,this,KEY_$NAME$)
+endmethod
+//! endtextmacro
+//! textmacro 연출_유닛 takes NAME
+private static key KEY_$NAME$
+method operator $NAME$= takes unit v returns nothing
+    call SaveUnitHandle(SFX_TABLE,this,KEY_$NAME$,v)
+endmethod
+method operator $NAME$ takes nothing returns unit
+    return LoadUnitHandle(SFX_TABLE,this,KEY_$NAME$)
+endmethod
+//! endtextmacro
+//! textmacro 연출_플레이어 takes NAME
+private static key KEY_$NAME$
+method operator $NAME$= takes player v returns nothing
+    call SavePlayerHandle(SFX_TABLE,this,KEY_$NAME$,v)
+endmethod
+method operator $NAME$ takes nothing returns player
+    return LoadPlayerHandle(SFX_TABLE,this,KEY_$NAME$)
+endmethod
+//! endtextmacro
