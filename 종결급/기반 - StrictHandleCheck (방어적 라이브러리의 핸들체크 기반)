@@ -1,0 +1,11 @@
+library StrictHandleCheck
+globals
+    integer HANDLE_MAX = 0
+endglobals
+function StrictHandleCheck takes handle h returns nothing
+    if GetHandleId(h) < HANDLE_MAX then
+        return
+    endif
+    set HANDLE_MAX = GetHandleId(h)
+endfunction
+endlibrary
