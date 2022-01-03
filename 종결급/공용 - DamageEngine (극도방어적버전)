@@ -1,0 +1,259 @@
+/*
+================================================================================
+    Damage Engine Defensive (DED)
+--------------------------------------------------------------------------------
+    극도로 방어적인 데미지 엔진입니다.
+    외부에서 엔진 동작에 개입 가능한 여지를 남기지 않기 위해 
+    자동 등록 기능을 보유하고 있으며, 보유 여부 체크를 위한 더미 능력을 사용한다는 점이 특징입니다.
+*/
+library DamageEngineDefensive initializer OnMapLoad requires optional StrictHandleCheck
+/*
+================================================================================
+    사용자 설정
+--------------------------------------------------------------------------------
+        맵 제작자가 커스텀 가능한 설정들입니다.
+*/
+globals
+    /*중복 등록 방지를 위한 기능으로, 휴먼 - '스피어' 같은 능력 기반의 커스텀 능력*/
+    private constant integer DAMAGE_TYPE_DETECTOR = 'Asph'
+    /*트리거 새로고침 간격(초)*/
+    private constant real TRIGGER_REFRESH_PERIOD = 60.0
+endglobals
+/*
+================================================================================
+    핵심 로직
+--------------------------------------------------------------------------------
+        데미지 받음 시스템의 핵심 로직입니다.
+*/
+globals
+    private hashtable ET = InitHashtable()
+    private trigger EAA = CreateTrigger()
+    private trigger EAH = CreateTrigger()
+    private constant integer EUTA = 10
+    private constant integer EUTH = 11
+    private constant integer EITA = 10
+    private constant integer EITH = 11
+    private item PT = null
+endglobals
+private function A1 takes unit src, unit dst returns nothing
+    local integer i
+    local item pt
+    
+    call TriggerEvaluate(EAA)
+    
+    call TriggerEvaluate(LoadTriggerHandle(ET /*
+    */ , EUTA, GetUnitTypeId(src) ))
+    
+    if IsUnitType(src,UNIT_TYPE_HERO) then
+        set pt = PT
+        set i = UnitInventorySize(src)
+        loop
+            exitwhen i == 0
+            set i = i - 1
+            set PT = UnitItemInSlot(src,i)
+            call TriggerEvaluate(LoadTriggerHandle(ET /*
+            */ , EITA, GetItemTypeId(PT) ))
+        endloop
+        set PT = pt
+        set pt = null
+    endif
+    
+    if IsUnitType(dst,UNIT_TYPE_HERO) then
+        set pt = PT
+        set i = UnitInventorySize(dst)
+        loop
+            exitwhen i == 0
+            set i = i - 1
+            set PT = UnitItemInSlot(dst,i)
+            call TriggerEvaluate(LoadTriggerHandle(ET /*
+            */ , EITH, GetItemTypeId(PT) ))
+        endloop
+        set PT = pt
+        set pt = null
+    endif
+    
+    call TriggerEvaluate(LoadTriggerHandle(ET /*
+    */ , EUTH, GetUnitTypeId(dst) ))
+    
+    call TriggerEvaluate(EAH)
+endfunction
+private function dA takes nothing returns nothing
+    if GetEventDamage() != 0 then
+        call A1(GetEventDamageSource(),GetTriggerUnit())
+    endif
+endfunction
+/*
+================================================================================
+    뎀받 트리거의 새로고침
+--------------------------------------------------------------------------------
+        데미지 받음 트리거를 새로 고침합니다.
+*/
+globals
+    private trigger dT = null
+    private code dC = null
+    private integer aI = 0
+endglobals
+function rT takes nothing returns nothing
+    local unit u = GetEnumUnit()
+    if GetUnitTypeId(u) != 0 then
+        call TriggerRegisterUnitEvent(dT,u,EVENT_UNIT_DAMAGED)
+    endif
+    set u = null
+endfunction
+private function RefreshAll takes nothing returns nothing
+    local group g = CreateGroup()
+    local code c = function dA
+    call GroupEnumUnitsInRect(g, GetWorldBounds(), null)
+    call ResetTrigger(dT)
+    call DestroyTrigger(dT)
+    set dT = CreateTrigger()
+    call TriggerAddCondition(dT,Filter(dC))
+    call ForGroup(g, function rT)
+    call GroupClear(g)
+    call DestroyGroup(g)
+    set g = null
+    set c = null
+endfunction
+private function RefreshInit takes nothing returns nothing
+    local trigger t = CreateTrigger()
+    call TriggerAddAction(t,function RefreshAll)
+    call TriggerRegisterTimerEvent(t,TRIGGER_REFRESH_PERIOD,true)
+    set t = null
+endfunction
+/*
+================================================================================
+    뎀받 트리거의 자동 등록
+--------------------------------------------------------------------------------
+        유닛을 자동 등록합니다.
+*/
+private function fR takes nothing returns nothing
+    local unit u = GetEnteringUnit()
+    if GetUnitAbilityLevel(u,aI) < 1 then
+        call UnitAddAbility(u,aI)
+static if LIBRARY_StrictHandleCheck then
+        call StrictHandleCheck(u)
+        call StrictHandleCheck(TriggerRegisterUnitEvent(dT,u,EVENT_UNIT_DAMAGED))
+else
+        call TriggerRegisterUnitEvent(dT,u,EVENT_UNIT_DAMAGED)
+endif
+    endif
+    set u = null
+endfunction
+private function InitRegister takes nothing returns nothing
+    local trigger t = CreateTrigger()
+    call TriggerAddAction(t,function fR)
+    call TriggerRegisterEnterRectSimple(t,GetWorldBounds())
+    set t = null
+endfunction
+globals
+    private group rG = CreateGroup()
+    private boolexpr rF = null
+endglobals
+private function fE takes nothing returns nothing
+    call UnitAddAbility(GetFilterUnit(),aI)
+static if LIBRARY_StrictHandleCheck then
+    call StrictHandleCheck(GetFilterUnit())
+    call StrictHandleCheck(TriggerRegisterUnitEvent(dT,GetFilterUnit(),EVENT_UNIT_DAMAGED))
+else
+    call TriggerRegisterUnitEvent(dT,GetFilterUnit(),EVENT_UNIT_DAMAGED)
+endif
+endfunction
+private function RegisterPlayerUnits takes player p returns nothing
+    call GroupEnumUnitsOfPlayer(rG,p,rF)
+endfunction
+private function RegisterAll takes nothing returns nothing
+    local integer i = 0
+    set rF = Filter(function fE)
+    loop
+        exitwhen i == bj_MAX_PLAYER_SLOTS
+        call RegisterPlayerUnits(Player(i))
+        set i = i + 1
+    endloop
+endfunction
+
+
+private function OnMapLoad takes nothing returns nothing
+    set aI = DAMAGE_TYPE_DETECTOR
+    set dC = function dA
+    set dT = CreateTrigger()
+    
+    call RefreshInit()
+    call RegisterAll()
+    call InitRegister()
+    
+    call TriggerAddCondition(dT,Filter(dC))
+endfunction
+/*
+================================================================================
+    API
+--------------------------------------------------------------------------------
+        외부로 제공하는 기능입니다.
+*/
+struct DamageEngine extends array
+    //---------------------------------------------------------
+    static method RegisterAnyUnitAttackEvent /*
+        */ takes code trigAction /*
+        */ returns triggercondition
+        return TriggerAddCondition(EAA,Condition(trigAction))
+    endmethod
+    static method RegisterUnitTypeAttackEvent /*
+        */ takes integer typeId, code trigAction /*
+        */ returns triggercondition
+        if not HaveSavedHandle(ET,EUTA,typeId) then
+            call SaveTriggerHandle(ET,EUTA,typeId,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(ET,EUTA,typeId) /*
+            */ , Condition(trigAction))
+    endmethod
+    //---------------------------------------------------------
+    static method RegisterAnyUnitHitEvent /*
+        */ takes code trigAction /*
+        */ returns triggercondition
+        return TriggerAddCondition(EAH,Condition(trigAction))
+    endmethod
+    static method RegisterUnitTypeHitEvent /*
+        */ takes integer typeId, code trigAction /*
+        */ returns triggercondition
+        if not HaveSavedHandle(ET,EUTH,typeId) then
+            call SaveTriggerHandle(ET,EUTH,typeId,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(ET,EUTH,typeId) /*
+            */ , Condition(trigAction))
+    endmethod
+    //---------------------------------------------------------
+    static method GetEventItem takes nothing returns item
+        return PT
+    endmethod
+    //---------------------------------------------------------
+    //static method RegisterAnyItemAttackEvent /*
+    //    */ takes code trigAction /*
+    //    */ returns triggercondition
+    //   return TriggerAddCondition(EAA,Condition(trigAction))
+    //endmethod
+    static method RegisterItemTypeAttackEvent /*
+        */ takes integer typeId, code trigAction /*
+        */ returns triggercondition
+        if not HaveSavedHandle(ET,EITA,typeId) then
+            call SaveTriggerHandle(ET,EITA,typeId,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(ET,EITA,typeId) /*
+            */ , Condition(trigAction))
+    endmethod
+    //---------------------------------------------------------
+    //static method RegisterAnyItemHitEvent /*
+    //    */ takes code trigAction /*
+    //    */ returns triggercondition
+    //    return TriggerAddCondition(EAH,Condition(trigAction))
+    //endmethod
+    static method RegisterItemTypeHitEvent /*
+        */ takes integer typeId, code trigAction /*
+        */ returns triggercondition
+        if not HaveSavedHandle(ET,EITH,typeId) then
+            call SaveTriggerHandle(ET,EITH,typeId,CreateTrigger())
+        endif
+        return TriggerAddCondition(LoadTriggerHandle(ET,EITH,typeId) /*
+            */ , Condition(trigAction))
+    endmethod
+    //---------------------------------------------------------
+endstruct
+endlibrary
