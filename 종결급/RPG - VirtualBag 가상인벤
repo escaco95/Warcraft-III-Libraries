@@ -1,5 +1,6 @@
 /*
     가상 무제한 인벤토리 VirtualBag
+        Version 1.3
     
     개발자의 맵에 virtualbag 타입을 생성합니다.
         - 여러 개의 가상 인벤토리를 다룰 수 있습니다
@@ -165,12 +166,13 @@ library VirtualBag
         if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
             return
         endif
-        call RemoveSavedInteger(BAG_ITEMS,bag,index*2)
-        call RemoveSavedInteger(BAG_ITEMS,bag,index*2+1)
+        call RemoveSavedInteger(BAG_ITEMS,bag,index*3)
+        call RemoveSavedInteger(BAG_ITEMS,bag,index*3+1)
+        call RemoveSavedInteger(BAG_ITEMS,bag,index*3+2)
         call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
     endfunction
     
-    function VBagSetItem takes virtualbag bag, integer index, integer typeId, integer charge returns nothing
+    function VBagSetItem takes virtualbag bag, integer index, integer typeId, integer charge, integer seed returns nothing
         if not BagAllocated(bag) then
             return
         endif
@@ -183,8 +185,78 @@ library VirtualBag
         if charge < 0 then
             return
         endif
-        call SaveInteger(BAG_ITEMS,bag,index*2,typeId)
-        call SaveInteger(BAG_ITEMS,bag,index*2+1,charge)
+        call SaveInteger(BAG_ITEMS,bag,index*3,typeId)
+        call SaveInteger(BAG_ITEMS,bag,index*3+1,charge)
+        call SaveInteger(BAG_ITEMS,bag,index*3+2,seed)
+        call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+    endfunction
+    function VBagSetItemCharges takes virtualbag bag, integer index, integer charge returns nothing
+        if not BagAllocated(bag) then
+            return
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return
+        endif
+        if charge < 0 then
+            return
+        endif
+        if LoadInteger(BAG_ITEMS,bag,index*3) == 0 then
+            return
+        endif
+        call SaveInteger(BAG_ITEMS,bag,index*3+1,charge)
+        call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+    endfunction
+    function VBagSetItemSeed takes virtualbag bag, integer index, integer seed returns nothing
+        if not BagAllocated(bag) then
+            return
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return
+        endif
+        if LoadInteger(BAG_ITEMS,bag,index*3) == 0 then
+            return
+        endif
+        call SaveInteger(BAG_ITEMS,bag,index*3+2,seed)
+        call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+    endfunction
+    function VBagAddItemCharges takes virtualbag bag, integer index, integer delta returns nothing
+        if not BagAllocated(bag) then
+            return
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return
+        endif
+        if delta < 0 then
+            return
+        endif
+        if LoadInteger(BAG_ITEMS,bag,index*3) == 0 then
+            return
+        endif
+        call SaveInteger(BAG_ITEMS,bag,index*3+1,LoadInteger(BAG_ITEMS,bag,index*3+1)+delta)
+        call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
+    endfunction
+    function VBagRemoveItemCharges takes virtualbag bag, integer index, integer delta, boolean decay returns nothing
+        local integer amount
+        if not BagAllocated(bag) then
+            return
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return
+        endif
+        if delta < 0 then
+            return
+        endif
+        if LoadInteger(BAG_ITEMS,bag,index*3) == 0 then
+            return
+        endif
+        set amount = IMaxBJ(0,LoadInteger(BAG_ITEMS,bag,index*3+1) - delta)
+        if amount <= 0 and decay then
+            call RemoveSavedInteger(BAG_ITEMS,bag,index*3)
+            call RemoveSavedInteger(BAG_ITEMS,bag,index*3+1)
+            call RemoveSavedInteger(BAG_ITEMS,bag,index*3+2)
+        else
+            call SaveInteger(BAG_ITEMS,bag,index*3+1,amount)
+        endif
         call SaveInteger(BAG_PROPS,bag,KEY_TIMESTAMP,LoadInteger(BAG_PROPS,bag,KEY_TIMESTAMP)+1)
     endfunction
     function VBagGetItemTypeId takes virtualbag bag, integer index returns integer
@@ -194,7 +266,7 @@ library VirtualBag
         if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
             return 0
         endif
-        return LoadInteger(BAG_ITEMS,bag,index*2)
+        return LoadInteger(BAG_ITEMS,bag,index*3)
     endfunction
     function VBagGetItemCharges takes virtualbag bag, integer index returns integer
         if not BagAllocated(bag) then
@@ -203,7 +275,16 @@ library VirtualBag
         if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
             return 0
         endif
-        return LoadInteger(BAG_ITEMS,bag,index*2+1)
+        return LoadInteger(BAG_ITEMS,bag,index*3+1)
+    endfunction
+    function VBagGetItemSeed takes virtualbag bag, integer index returns integer
+        if not BagAllocated(bag) then
+            return 0
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return 0
+        endif
+        return LoadInteger(BAG_ITEMS,bag,index*3+2)
     endfunction
     
     
@@ -214,7 +295,25 @@ library VirtualBag
         if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
             return false
         endif
-        return LoadInteger(BAG_ITEMS,bag,index*2) != 0
+        return LoadInteger(BAG_ITEMS,bag,index*3) != 0
+    endfunction
+    function VBagItemCheck takes virtualbag bag, integer index, integer id, integer charges, integer seed returns boolean
+        if not BagAllocated(bag) then
+            return false
+        endif
+        if 0 > index or index >= LoadInteger(BAG_PROPS,bag,KEY_SIZE) then
+            return false
+        endif
+        if LoadInteger(BAG_ITEMS,bag,index*3) != id or id == 0 then
+            return false
+        endif
+        if LoadInteger(BAG_ITEMS,bag,index*3+1) != charges then
+            return false
+        endif
+        if LoadInteger(BAG_ITEMS,bag,index*3+2) != seed then
+            return false
+        endif
+        return true
     endfunction
     
     
@@ -239,25 +338,29 @@ library VirtualBag
         private virtualbag IEVENT_BAG = 0
         private integer IEVENT_TYPEID = 0
         private integer IEVENT_CHARGE = 0
+        private integer IEVENT_SEED = 0
         private integer IEVENT_SLOT = -1
     endglobals
     
-    private function FireOperation takes virtualbag bag, integer op, integer id, integer charges, integer slot returns boolean
+    private function FireOperation takes virtualbag bag, integer op, integer id, integer charges, integer seed, integer slot returns boolean
         local boolean result
         local integer btyp = LoadInteger(BAG_PROPS,bag,KEY_TYPEID)
         local virtualbag pb = IEVENT_BAG
         local integer pt = IEVENT_TYPEID
         local integer pc = IEVENT_CHARGE
+        local integer pd = IEVENT_SEED
         local integer ps = IEVENT_SLOT
        
         set IEVENT_BAG = bag
         set IEVENT_TYPEID = id
         set IEVENT_CHARGE = charges
+        set IEVENT_SEED = seed
         set IEVENT_SLOT = slot
         set result = TriggerEvaluate(LoadTriggerHandle(BAG_OP,op,btyp))
         set IEVENT_BAG = pb
         set IEVENT_TYPEID = pt
         set IEVENT_CHARGE = pc
+        set IEVENT_SEED = pd
         set IEVENT_SLOT = ps
         
         return result
@@ -272,11 +375,14 @@ library VirtualBag
     function VBagGetEventItemCharges takes nothing returns integer
         return IEVENT_CHARGE
     endfunction
+    function VBagGetEventItemSeed takes nothing returns integer
+        return IEVENT_SEED
+    endfunction
     function VBagGetEventItemSlot takes nothing returns integer
         return IEVENT_SLOT
     endfunction
     
-    function VBagOperationAdd takes virtualbag bag, integer typeId, integer charge returns boolean
+    function VBagOperationAdd takes virtualbag bag, integer typeId, integer charge, integer seed returns boolean
         if not BagAllocated(bag) then
             return false
         endif
@@ -286,14 +392,14 @@ library VirtualBag
         if charge < 0 then
             return false
         endif
-        return FireOperation(bag,BAG_OP_ADD,typeId,charge,-1)
+        return FireOperation(bag,BAG_OP_ADD,typeId,charge,seed,-1)
     endfunction
     
     function VBagOperationDrop takes virtualbag bag, integer index returns boolean
         if not VBagItemExists(bag,index) then
             return false
         endif
-        return FireOperation(bag,BAG_OP_DROP,LoadInteger(BAG_ITEMS,bag,index*2),LoadInteger(BAG_ITEMS,bag,index*2+1),index)
+        return FireOperation(bag,BAG_OP_DROP,LoadInteger(BAG_ITEMS,bag,index*3),LoadInteger(BAG_ITEMS,bag,index*3+1),LoadInteger(BAG_ITEMS,bag,index*3+2),index)
     endfunction
     
     function VBagTriggerRegisterOperationAddEvent takes integer bagType, code c returns triggercondition
