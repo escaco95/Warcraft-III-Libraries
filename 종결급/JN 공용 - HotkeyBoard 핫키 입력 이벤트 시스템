@@ -103,22 +103,30 @@ library HotkeyBoard initializer OnMapLoad
         private code HOTKEY_CALLBACK = null
     endglobals
     
+    native DzFrameFindByName takes string name, integer id returns integer
+    native DzFrameSetScriptByCode takes integer frame, integer eventId, code funcHandle, boolean sync returns nothing
+    native DzSyncData takes string prefix, string data returns nothing
+    native DzGetTriggerUIEventFrame takes nothing returns integer
+    native DzGetTriggerSyncPlayer takes nothing returns player
+    native DzGetTriggerSyncData takes nothing returns string
+    native DzLoadToc takes string fileName returns nothing
+    native DzTriggerRegisterSyncData takes trigger trig, string prefix, boolean server returns nothing
+    native DzCreateFrame takes string frame, integer parent, integer id returns integer
+    native DzFrameShow takes integer frame, boolean enable returns nothing
+    native DzFrameSetAbsolutePoint takes integer frame, integer point, real x, real y returns nothing
+    native DzFrameSetSize takes integer frame, real w, real h returns nothing
     
     private function InitHotkeys takes nothing returns nothing
         local integer hk
         
         set hk = DzFrameFindByName("HotkeyI", 0)
         call SaveStr(HOTKEY_TABLE,0,hk,"I")
-        call DzFrameSetScriptByCode(hk, JN_FRAMEEVENT_CONTROL_CLICK, HOTKEY_CALLBACK, false)
-        
-        set hk = DzFrameFindByName("HotkeyB", 0)
-        call SaveStr(HOTKEY_TABLE,0,hk,"B")
-        call DzFrameSetScriptByCode(hk, JN_FRAMEEVENT_CONTROL_CLICK, HOTKEY_CALLBACK, false)
+        call DzFrameSetScriptByCode(hk, 1, HOTKEY_CALLBACK, false)
         
         // 더 많은 핫키 등록하는 방법!
         //set hk = DzFrameFindByName("Hotkey키", 0)
         //call SaveStr(HOTKEY_TABLE,0,hk,"키")
-        //call DzFrameSetScriptByCode(hk, JN_FRAMEEVENT_CONTROL_CLICK, HOTKEY_CALLBACK, false)
+        //call DzFrameSetScriptByCode(hk, 1, HOTKEY_CALLBACK, false)
         
     endfunction
     
@@ -180,7 +188,7 @@ library HotkeyBoard initializer OnMapLoad
         
         set frame = DzCreateFrame("HotkeyBoard",  DzGetGameUI(), 0)
 
-        call DzFrameSetAbsolutePoint(frame, JN_FRAMEPOINT_TOPRIGHT, -0.4, -0.3)
+        call DzFrameSetAbsolutePoint(frame, 2, -0.4, -0.3)
         call DzFrameSetSize(frame,0.4,0.3)
         
         set HOTKEY_CALLBACK = function LocalHotkeyDown
