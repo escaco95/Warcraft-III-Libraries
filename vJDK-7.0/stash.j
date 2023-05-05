@@ -397,6 +397,15 @@ library Stash
     private function printProxy takes nothing returns nothing
         call print( ARG_STASH )
     endfunction
+    
+    private function age takes integer this returns nothing
+        //! runtextmacro VALIDATE_STASH_EXISTENCE_WARN( "this" )
+    
+        set ARG_INDEX = LoadInteger( STAMP_TABLE, this, 0 )
+    endfunction
+    private function ageProxy takes nothing returns nothing
+        call age( ARG_STASH )
+    endfunction
     /*========================================================================*/
     /* EXTERNAL INTERFACES */
     /*========================================================================*/
@@ -519,6 +528,14 @@ library Stash
     function StashPrint takes stash whichStash returns nothing
         set ARG_STASH = whichStash
         call ForForce( bj_FORCE_PLAYER[0], function printProxy )
+    endfunction
+    
+    /* 스태쉬의 데이터 변경 횟수를 받아옵니다. */
+    function StashAge takes stash whichStash returns integer
+        set ARG_STASH = whichStash
+        set ARG_INDEX = 0
+        call ForForce( bj_FORCE_PLAYER[0], function ageProxy )
+        return ARG_INDEX
     endfunction
 
 endlibrary
