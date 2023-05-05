@@ -267,10 +267,19 @@ library Stash
     endfunction
     
     private function contains takes integer this, string property returns nothing
+        local integer propertyIndex
         //! runtextmacro VALIDATE_STASH_EXISTENCE_WARN( "this" )
         //! runtextmacro VALIDATE_STASH_PROPERTY_WARN( "property" )
         
-        set ARG_FLAG = getIndex( this, property ) >= 0
+        set propertyIndex = getIndex( this, property )
+        if propertyIndex < 0 then
+            return
+        endif
+        if not HaveSavedString( VALUE_TABLE, this, propertyIndex ) then
+            return
+        endif
+        
+        set ARG_FLAG = true
     endfunction
     private function containsProxy takes nothing returns nothing
         call contains( ARG_STASH, ARG_PROPERTY )
