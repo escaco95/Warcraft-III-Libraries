@@ -221,6 +221,9 @@ library Stash
         //! runtextmacro VALIDATE_STASH_EXISTENCE_WARN( "this" )
         //! runtextmacro VALIDATE_STASH_INDEX_WARN( "this", "index" )
         
+        if not HaveSavedString( VALUE_TABLE, this, index ) then
+            return
+        endif
         set ARG_VALUE = LoadStr( VALUE_TABLE, this, index )
     endfunction
     private function valueAtProxy takes nothing returns nothing
