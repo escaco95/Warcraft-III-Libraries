@@ -180,6 +180,23 @@ library Stash
         call destroy( ARG_STASH )
     endfunction
     
+    private function clear takes integer this returns nothing
+        //! runtextmacro VALIDATE_STASH_EXISTENCE_WARN( "this" )
+        
+        call SaveInteger( SCALE_TABLE, this, SCALE_SIZE, 0 )
+        call SaveInteger( SCALE_TABLE, this, SCALE_REMAINING, 0 )
+        call FlushChildHashtable( HNAME_TABLE, this )
+        call FlushChildHashtable( HINDX_TABLE, this )
+        call FlushChildHashtable( PROPT_TABLE, this )
+        call FlushChildHashtable( VALUE_TABLE, this )
+        call SaveInteger( STAMP_TABLE, this, 0, LoadInteger(STAMP_TABLE, this, 0) + 1 )
+        
+        set ARG_FLAG = true
+    endfunction
+    private function clearProxy takes nothing returns nothing
+        call clear( ARG_STASH )
+    endfunction
+    
     private function exists takes integer this returns nothing
         //! runtextmacro VALIDATE_STASH_EXISTENCE( "this" )
         
@@ -446,6 +463,14 @@ library Stash
         set ARG_STASH = whichStash
         set ARG_FLAG = false
         call ForForce( bj_FORCE_PLAYER[0], function destroyProxy )
+        return ARG_FLAG
+    endfunction
+    
+    /* 스태쉬 내용 깔끔하게 비우기 (Age 는 초기화되지 않음) */
+    function StashClear takes stash whichStash returns boolean
+        set ARG_STASH = whichStash
+        set ARG_FLAG = false
+        call ForForce( bj_FORCE_PLAYER[0], function clearProxy )
         return ARG_FLAG
     endfunction
     
