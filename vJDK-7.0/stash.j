@@ -1,3 +1,11 @@
+/* Stash 1.11 */
+/* REFERENCE : https://github.com/escaco95/Warcraft-III-Libraries/blob/escaco/vJDK-7.0/stash.j */
+/*
+    RECENT CHANGES
+        1.11 - Reference/History comment added (2023/05/30)
+        1.1 - Stash clear function added (2023/05/07)
+        1.0 - Official release (2023/05/06)
+*/
 library Stash
     /*========================================================================*/
     /* TEXTMACRO */
