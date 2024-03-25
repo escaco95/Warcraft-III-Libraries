@@ -77,10 +77,11 @@ private function A1 takes unit src, unit dst returns nothing
     
     call TriggerEvaluate(EAH)
 endfunction
-private function dA takes nothing returns nothing
+private function dA takes nothing returns boolean
     if GetEventDamage() != 0 then
         call A1(GetEventDamageSource(),GetTriggerUnit())
     endif
+    return false
 endfunction
 /*
 ================================================================================
@@ -149,7 +150,7 @@ globals
     private group rG = CreateGroup()
     private boolexpr rF = null
 endglobals
-private function fE takes nothing returns nothing
+private function fE takes nothing returns boolean
     call UnitAddAbility(GetFilterUnit(),aI)
 static if LIBRARY_StrictHandleCheck then
     call StrictHandleCheck(GetFilterUnit())
@@ -157,6 +158,7 @@ static if LIBRARY_StrictHandleCheck then
 else
     call TriggerRegisterUnitEvent(dT,GetFilterUnit(),EVENT_UNIT_DAMAGED)
 endif
+    return false
 endfunction
 private function RegisterPlayerUnits takes player p returns nothing
     call GroupEnumUnitsOfPlayer(rG,p,rF)
