@@ -8,7 +8,7 @@
 // ## 작성자
 // - **Name**: 동동주
 // - **Mail**: escaco95@naver.com
-// - **GitHub**: [damage-engine-base.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/damage-engine-base.j)
+// - **GitHub**: [damage-engine-base.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/damage-engine-base.j)
 //
 // ## 버전
 // - **Version**: 20240902.0

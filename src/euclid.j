@@ -8,7 +8,7 @@
 // ## 작성자
 // - **Name**: 동동주
 // - **Mail**:  escaco95@naver.com
-// - **GitHub**: [euclid.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/euclid.j)
+// - **GitHub**: [euclid.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/euclid.j)
 //
 // ## 버전
 // - **Version**: 20240902.0

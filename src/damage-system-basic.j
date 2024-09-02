@@ -8,7 +8,7 @@
 // ## 작성자
 // - **Name**: 동동주
 // - **Mail**: escaco95@naver.com
-// - **GitHub**: [damage-system-basic.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/damage-system-basic.j)
+// - **GitHub**: [damage-system-basic.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/damage-system-basic.j)
 //
 // ## 버전
 // - **Version**: 20240902.0
