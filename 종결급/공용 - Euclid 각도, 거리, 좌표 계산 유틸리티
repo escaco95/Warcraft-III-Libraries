@@ -495,12 +495,19 @@ library Euclid
         call SetUnitY(u, POINT_Y)
     endfunction
 
-    // 좌표 - 유닛의 위치를 지정한 좌표로 설정합니다.
+    // 좌표 - 유닛을 현재 좌표로 가져옵니다.
     // ℹ️ 유닛의 위치가 즉시 이동됩니다.
     // ⚠️ 유닛이 받은 명령이 취소됩니다.
     // ⚠️ 유닛이 재생 중인 애니메이션이 중단될 수 있습니다.
     function PointBringUnit takes unit u returns nothing
         call SetUnitPosition(u, POINT_X, POINT_Y)
+    endfunction
+
+    // 좌표 - 아이템을 현재 좌표로 가져옵니다.
+    // ⚠️ 숨겨져 있던 아이템일 경우 보이게 됩니다.
+    // ⚠️ 누군가 들고 있던 아이템일 경우 바닥에 떨어집니다.
+    function PointBringItem takes item i returns nothing
+        call SetItemPosition(i, POINT_X, POINT_Y)
     endfunction
 
 endlibrary
