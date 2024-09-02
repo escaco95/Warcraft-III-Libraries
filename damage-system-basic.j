@@ -35,6 +35,8 @@
 library DamageSystemBasic initializer onInit requires DamageEngineBase
 
     globals
+        private integer damageEventSuspendCount = 0
+
         private trigger actionAnyUnitAttack = CreateTrigger()
 
         private hashtable actionTable = InitHashtable()
@@ -95,8 +97,8 @@ library DamageSystemBasic initializer onInit requires DamageEngineBase
     endfunction
 
     private function onAnyDamageOccurs takes nothing returns boolean
-        // 경고성 피해가 아닌, 실제 피해가 발생했을 때만 트리거를 실행합니다. 
-        if GetEventDamage() != 0 then
+        // 경고성 피해(건물에 적이 접근 중 등...)가 아닌, 실제 피해가 발생했을 때만 트리거를 실행합니다. 
+        if damageEventSuspendCount == 0 and GetEventDamage() != 0 then
             call processDamageLogic( GetEventDamageSource(), GetTriggerUnit() )
         endif
         return false
@@ -146,6 +148,26 @@ library DamageSystemBasic initializer onInit requires DamageEngineBase
     // 데미지 받음 시스템 - 어떤 유닛이든 피해 받음 이벤트 등록
     function RegisterAnyUnitHitEvent takes code action returns nothing
         call TriggerAddCondition(actionAnyUnitHit, Condition(action))
+    endfunction
+
+    // 데미지 받음 시스템 - 데미지 이벤트 일시 중지
+    // ℹ️ 치명타 판정 등으로 이벤트 중첩 발생 없이 추가 데미지를 주고 싶은 경우 사용해주세요.
+    // ℹ️ `ResumeDamageEvent` 함수를 호출하기 전까지 데미지 이벤트가 실행되지 않습니다.
+    // ⚠️ `SuspendDamageEvent`와 `ResumeDamageEvent`는 반드시 쌍으로 사용되어야 합니다.
+    // 🚨 만약 이 쌍이 맞지 않는 경우, 맵 상의 모든 데미지 판정이 발생하지 않을 수 있습니다.
+    function SuspendDamageEvent takes nothing returns nothing
+        set damageEventSuspendCount = damageEventSuspendCount + 1
+    endfunction
+
+    // 데미지 받음 시스템 - 데미지 이벤트 재개
+    function ResumeDamageEvent takes nothing returns nothing
+        if damageEventSuspendCount <= 0 then
+            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 3600, "|cFFFF0000[FATAL] ERROR!! 데미지 이벤트가 일시 중지되어 있지 않으나 ResumeDamageEvent 함수가 호출되었습니다!!|r")
+            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 3600, "스크립트 어딘가에서 SuspendDamageEvent 와 ResumeDamageEvent 함수의 쌍이 맞지 않는 문제가 발생한 게 분명합니다.")
+            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 3600, "전수조사를 통해 문제를 해결하지 않을 경우, 데미지 받음 이벤트 기반 트리거들이 모두 오동작할 수 있습니다.")
+            return
+        endif
+        set damageEventSuspendCount = damageEventSuspendCount - 1
     endfunction
 
 endlibrary
