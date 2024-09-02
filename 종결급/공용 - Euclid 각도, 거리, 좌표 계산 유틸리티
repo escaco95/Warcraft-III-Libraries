@@ -376,9 +376,29 @@ library Euclid
         set POINT_Y = GetWidgetY(w)
     endfunction
 
+    // ## 좌표 - 좌표의 X축을 객체의 X축으로 설정합니다.
+    function PointWidgetX takes widget w returns nothing
+        set POINT_X = GetWidgetX(w)
+    endfunction
+
+    // ## 좌표 - 좌표의 Y축을 객체의 Y축으로 설정합니다.
+    function PointWidgetY takes widget w returns nothing
+        set POINT_Y = GetWidgetY(w)
+    endfunction
+
     // ## 좌표 - 좌표를 유닛의 좌표로 설정합니다.
     function PointUnit takes unit u returns nothing
         set POINT_X = GetUnitX(u)
+        set POINT_Y = GetUnitY(u)
+    endfunction
+
+    // ## 좌표 - 좌표의 X축을 유닛의 X축으로 설정합니다.
+    function PointUnitX takes unit u returns nothing
+        set POINT_X = GetUnitX(u)
+    endfunction
+
+    // ## 좌표 - 좌표의 Y축을 유닛의 Y축으로 설정합니다.
+    function PointUnitY takes unit u returns nothing
         set POINT_Y = GetUnitY(u)
     endfunction
 
@@ -388,9 +408,35 @@ library Euclid
         set POINT_Y = GetItemY(i)
     endfunction
 
+    // ## 좌표 - 좌표의 X축을 아이템의 X축으로 설정합니다.
+    function PointItemX takes item i returns nothing
+        set POINT_X = GetItemX(i)
+    endfunction
+
+    // ## 좌표 - 좌표의 Y축을 아이템의 Y축으로 설정합니다.
+    function PointItemY takes item i returns nothing
+        set POINT_Y = GetItemY(i)
+    endfunction
+
+    // ## 좌표 - 좌표를 플레이어의 시작 위치로 설정합니다.
+    function PointPlayer takes player p returns nothing
+        set POINT_X = GetStartLocationX(GetPlayerStartLocation(p))
+        set POINT_Y = GetStartLocationY(GetPlayerStartLocation(p))
+    endfunction
+
     // ## 좌표 - 좌표를 이동합니다.
     function PointMove takes real x, real y returns nothing
         set POINT_X = POINT_X + x
+        set POINT_Y = POINT_Y + y
+    endfunction
+
+    // ## 좌표 - 좌표의 X축을 이동합니다.
+    function PointMoveX takes real x returns nothing
+        set POINT_X = POINT_X + x
+    endfunction
+
+    // ## 좌표 - 좌표의 Y축을 이동합니다.
+    function PointMoveY takes real y returns nothing
         set POINT_Y = POINT_Y + y
     endfunction
 
@@ -477,12 +523,12 @@ library Euclid
     endfunction
 
     // ## 좌표 - 유닛의 X축 좌표를 지정한 좌표로 설정합니다.
-    function PointXBringUnit takes unit u returns nothing
+    function PointBringUnitX takes unit u returns nothing
         call SetUnitX(u, POINT_X)
     endfunction
 
     // ## 좌표 - 유닛의 Y축 좌표를 지정한 좌표로 설정합니다.
-    function PointYBringUnit takes unit u returns nothing
+    function PointBringUnitY takes unit u returns nothing
         call SetUnitY(u, POINT_Y)
     endfunction
 
@@ -490,7 +536,7 @@ library Euclid
     // ℹ️ X좌표가 먼저 이동된 후 Y좌표가 이동됩니다.
     // ⚠️ 장거리 이동 시 주의하여 사용하십시오.
     // 🚨 각 좌표가 따로따로 이동되므로, 의도치 않은 위치에 이동 판정이 발생할 수 있습니다.
-    function PointXYBringUnit takes unit u returns nothing
+    function PointBringUnitXY takes unit u returns nothing
         call SetUnitX(u, POINT_X)
         call SetUnitY(u, POINT_Y)
     endfunction
