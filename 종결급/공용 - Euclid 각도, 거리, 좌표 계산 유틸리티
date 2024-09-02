@@ -510,4 +510,41 @@ library Euclid
         call SetItemPosition(i, POINT_X, POINT_Y)
     endfunction
 
+    globals
+        private real array POINT_X_STACK
+        private real array POINT_Y_STACK
+        private integer POINT_STACK_INDEX = 0
+    endglobals
+
+    // 좌표 - 현재 좌표를 스택에 저장합니다.
+    // ℹ️ 트리거 간 좌표 계산 간섭을 방지하기 위해 사용됩니다.
+    // ⚠️ 좌표는 최대 8191 중첩까지 스택 가능합니다.
+    // ⚠️ `PointPush`와 `PointPop`은 반드시 쌍으로 사용되어야 합니다.
+    // 🚨 만약 개발자 실수로 중첩 한계치를 넘기게 되면 반드시 페이탈 오류가 발생하게 됩니다. 
+    // ---
+    // **사용예시**
+    // > `call PointPush( )`
+    // > `// 이 사이에 Point 기능으로 하고 싶은 작업을 모두 코드로 작성`
+    // > `call PointPop( )`
+    // ---
+    function PointPush takes nothing returns nothing
+        set POINT_STACK_INDEX = POINT_STACK_INDEX + 1
+        set POINT_X_STACK[POINT_STACK_INDEX] = POINT_X
+        set POINT_Y_STACK[POINT_STACK_INDEX] = POINT_Y
+    endfunction
+
+    // 좌표 - 스택에 저장된 좌표를 불러옵니다.
+    // ℹ️ 트리거 간 좌표 계산 간섭을 방지하기 위해 사용됩니다.
+    function PointPop takes nothing returns nothing
+        if POINT_STACK_INDEX <= 0 then
+            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 3600, "|cFFFF0000[FATAL] ERROR!! 좌표 스택이 비어있으나 PointPop 함수가 호출되었습니다!!|r")
+            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 3600, "스크립트 어딘가에서 PointPush 와 PointPop 함수의 쌍이 맞지 않는 문제가 발생한 게 분명합니다.")
+            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 3600, "전수조사를 통해 문제를 해결하지 않을 경우, 좌표 기반 스크립트들이 모두 오작동할 수 있습니다.")
+            return
+        endif
+        set POINT_X = POINT_X_STACK[POINT_STACK_INDEX]
+        set POINT_Y = POINT_Y_STACK[POINT_STACK_INDEX]
+        set POINT_STACK_INDEX = POINT_STACK_INDEX - 1
+    endfunction
+
 endlibrary
