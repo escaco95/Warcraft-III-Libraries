@@ -365,15 +365,27 @@ library Euclid
     endfunction
 
     // 좌표 - 좌표를 설정합니다.
-    function PointSet takes real x, real y returns nothing
+    function Point takes real x, real y returns nothing
         set POINT_X = x
         set POINT_Y = y
     endfunction
 
     // 좌표 - 좌표를 객체의 좌표로 설정합니다.
-    function PointSetWidget takes widget w returns nothing
+    function PointWidget takes widget w returns nothing
         set POINT_X = GetWidgetX(w)
         set POINT_Y = GetWidgetY(w)
+    endfunction
+
+    // 좌표 - 좌표를 유닛의 좌표로 설정합니다.
+    function PointUnit takes unit u returns nothing
+        set POINT_X = GetUnitX(u)
+        set POINT_Y = GetUnitY(u)
+    endfunction
+
+    // 좌표 - 좌표를 아이템의 좌표로 설정합니다.
+    function PointItem takes item i returns nothing
+        set POINT_X = GetItemX(i)
+        set POINT_Y = GetItemY(i)
     endfunction
 
     // 좌표 - 좌표를 이동합니다.
@@ -388,6 +400,18 @@ library Euclid
         local real sinA = Sin(angle * bj_DEGTORAD)
         local real dx = POINT_X - x
         local real dy = POINT_Y - y
+        set POINT_X = x + dx * cosA - dy * sinA
+        set POINT_Y = y + dx * sinA + dy * cosA
+    endfunction
+
+    // 좌표 - 좌표를 지정한 중심점을 기준으로 호의 길이만큼 회전합니다.
+    function PointRotateArc takes real x, real y, real arc returns nothing
+        local real dx = POINT_X - x
+        local real dy = POINT_Y - y
+        local real radius = SquareRoot(dx * dx + dy * dy)
+        local real angle = arc / radius
+        local real cosA = Cos(angle)
+        local real sinA = Sin(angle)
         set POINT_X = x + dx * cosA - dy * sinA
         set POINT_Y = y + dx * sinA + dy * cosA
     endfunction
@@ -450,6 +474,33 @@ library Euclid
             set POINT_X = x + dx * (radius / dist)
             set POINT_Y = y + dy * (radius / dist)
         endif
+    endfunction
+
+    // 좌표 - 유닛의 X축 좌표를 지정한 좌표로 설정합니다.
+    function PointXBringUnit takes unit u returns nothing
+        call SetUnitX(u, POINT_X)
+    endfunction
+
+    // 좌표 - 유닛의 Y축 좌표를 지정한 좌표로 설정합니다.
+    function PointYBringUnit takes unit u returns nothing
+        call SetUnitY(u, POINT_Y)
+    endfunction
+
+    // 좌표 - 유닛의 X축 좌표와 Y축 좌표를 지정한 좌표로 설정합니다.
+    // ℹ️ X좌표가 먼저 이동된 후 Y좌표가 이동됩니다.
+    // ⚠️ 장거리 이동 시 주의하여 사용하십시오.
+    // 🚨 각 좌표가 따로따로 이동되므로, 의도치 않은 위치에 이동 판정이 발생할 수 있습니다.
+    function PointXYBringUnit takes unit u returns nothing
+        call SetUnitX(u, POINT_X)
+        call SetUnitY(u, POINT_Y)
+    endfunction
+
+    // 좌표 - 유닛의 위치를 지정한 좌표로 설정합니다.
+    // ℹ️ 유닛의 위치가 즉시 이동됩니다.
+    // ⚠️ 유닛이 받은 명령이 취소됩니다.
+    // ⚠️ 유닛이 재생 중인 애니메이션이 중단될 수 있습니다.
+    function PointBringUnit takes unit u returns nothing
+        call SetUnitPosition(u, POINT_X, POINT_Y)
     endfunction
 
 endlibrary
