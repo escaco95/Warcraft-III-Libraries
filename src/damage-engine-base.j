@@ -35,13 +35,15 @@
 // - 만약 모든 유닛에게 이상한 이펙트 효과가 나타난다면, 이는 'Asph' 능력 때문입니다.
 //   눈에 보이지 않는 더미 능력을 생성하고, 그 능력의 코드값을 'Asph' 대신 사용하세요.
 // ---
-library DamageEngineBase initializer onInit
+library DamageEngineBase initializer onInit requires optional DamageEngineConfig
 
     globals
         // 중복 등록 방지를 위한 기능으로, 휴먼 - '스피어' 같은 능력 기반의 커스텀 능력
-        private constant integer REGISTER_CHECK_ABILITY_ID = 'Asph'
+        private constant integer DEFAULT_REGISTER_CHECK_ABILITY_ID = 'Asph'
         // 트리거 새로고침 간격(초)
         private constant real REFRESH_PERIOD = 60.0
+
+        private integer REGISTER_CHECK_ABILITY_ID = DEFAULT_REGISTER_CHECK_ABILITY_ID
 
         private trigger baseTrigger = null
         private boolexpr array actions
@@ -126,6 +128,10 @@ library DamageEngineBase initializer onInit
 
     private function onInit takes nothing returns nothing
         // 라이브러리 초기화
+        static if LIBRARY_DamageEngineConfig then
+            // ERROR!! MISSING `public constant function DUMMY_ABILITY_ID takes nothing returns integer` IN `DamageEngineConfig` LIBRARY
+            set REGISTER_CHECK_ABILITY_ID = DamageEngineConfig_DUMMY_ABILITY_ID()
+        endif
         set registerAction = Filter(function registerUnit)
 
         // 새로고침 동작 & 자동 등록 초기화
