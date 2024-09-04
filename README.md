@@ -9,6 +9,8 @@
 
 | 라이브러리 이름 | 소스 | 요약 |
 | -- | -- | -- |
+| 해시리스트 | [hashlist.j](src/hashlist.j) | 정수 전용 해시테이블 + 인덱스 조회 |
+| 이벤트 래퍼 | [event-wrapper.j](src/event-wrapper.j) | 워크래프트 기본 이벤트 래퍼 |
 | 유클리드 | [euclid.j](src/euclid.j) | 거리, 각도, 좌표 계산 유틸리티 (구 Angle Distance Polar) |
 | 핸들 프로파일러 | [handle-profiler.j](src/handle-profiler.j) | 누수체크, 핸들값 모니터링 유틸리티 |
 | 틱 | [tick.j](src/tick.j) | 타이머 재사용 및 인덱싱 유틸리티 |
