@@ -7,7 +7,7 @@
 // ## 작성자
 // - **Name**: 동동주
 // - **Mail**: escaco95@naver.com
-// - **GitHub**: [GitHub 프로필 링크를 여기에 입력하세요]
+// - **GitHub**: [hashlist.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/hashlist.j)
 //
 // ## 버전
 // - **Version**: 20240902.0
