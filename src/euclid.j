@@ -424,6 +424,18 @@ library Euclid
         set POINT_Y = GetStartLocationY(GetPlayerStartLocation(p))
     endfunction
 
+    // ## 좌표 - 좌표를 구역의 중심점으로 설정합니다.
+    function PointRect takes rect r returns nothing
+        set POINT_X = GetRectCenterX(r)
+        set POINT_Y = GetRectCenterY(r)
+    endfunction
+
+    // ## 좌표 - 좌표를 구역 내 무작위 좌표로 설정합니다.
+    function PointRandomRect takes rect r returns nothing
+        set POINT_X = GetRandomReal(GetRectMinX(r), GetRectMaxX(r))
+        set POINT_Y = GetRandomReal(GetRectMinY(r), GetRectMaxY(r))
+    endfunction
+
     // ## 좌표 - 좌표를 이동합니다.
     function PointMove takes real x, real y returns nothing
         set POINT_X = POINT_X + x
@@ -491,9 +503,17 @@ library Euclid
     // ## 좌표 - 좌표를 지정한 반지름 내 무작위 좌표로 흩뿌립니다.
     function PointSpreadCircle takes real radius returns nothing
         local real angle = GetRandomReal(0.0, bj_PI * 2)
-        local real dist = GetRandomReal(0.0, radius) * SquareRoot(GetRandomReal(0.0, 1.0))
-        set POINT_X = POINT_X + radius * Cos(angle)
-        set POINT_Y = POINT_Y + radius * Sin(angle)
+        local real dist = radius * (1 - SquareRoot(GetRandomReal(0.0, 1.0)))
+        set POINT_X = POINT_X + dist * Cos(angle)
+        set POINT_Y = POINT_Y + dist * Sin(angle)
+    endfunction
+
+    // ## 좌표 - 좌표를 지정한 원 내 무작위 좌표로 흩뿌립니다.
+    function PointSpreadDonut takes real inner, real outer returns nothing
+        local real angle = GetRandomReal(0.0, bj_PI * 2)
+        local real dist = inner + (outer - inner) * SquareRoot(GetRandomReal(0.0, 1.0))
+        set POINT_X = POINT_X + dist * Cos(angle)
+        set POINT_Y = POINT_Y + dist * Sin(angle)
     endfunction
 
     // ## 좌표 - 좌표를 지정한 사각형 내 무작위 좌표로 흩뿌립니다.
