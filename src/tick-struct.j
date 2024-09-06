@@ -84,6 +84,7 @@
         set .elapsed = .elapsed - .timeout
     endmethod
 
+    debug private static boolean startRequired = false
     static constant real timeout = $TIMEOUT$
     static thistype new
 
@@ -91,11 +92,15 @@
     real elapsed
     
     static method create takes nothing returns thistype
+        debug if startRequired then
+            debug call BJDebugMsg("thistype: 이전 개체가 start 되지 않은 상태에서 새로운 개체를 생성하려고 합니다.")
+        debug endif
+        debug set startRequired = true
         set new = TickCreate()
         set new.stage = 0
         set new.elapsed = 0
-        static if thistype.onStart.exists then
-            call new.onStart()
+        static if thistype.onCreate.exists then
+            call new.onCreate()
         endif
         return new
     endmethod
@@ -120,6 +125,10 @@
     endmethod
     
     method start takes nothing returns nothing
+        debug if not startRequired then
+            debug call BJDebugMsg("thistype: start 함수를 호출하기 전에 create 함수를 호출해야 합니다.")
+        debug endif
+        debug set startRequired = false
         static if thistype.onStart.exists then
             call .onStart()
         endif
