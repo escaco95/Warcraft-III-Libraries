@@ -576,6 +576,24 @@ library Euclid
         call SetItemPosition(i, POINT_X, POINT_Y)
     endfunction
 
+    // ## 좌표 - 현재 좌표가 지정한 범위 내에 있는지 확인합니다.
+    // ⚠️ 좌표 정밀하며, 유닛 충돌 범위를 고려하지 않습니다.
+    // ⚠️ 유닛 충돌 범위를 고려해야 할 경우 `IsUnitInRange`, `IsUnitInRangeXY` 함수를 사용하십시오.
+    function IsPointInRange takes real x, real y, real range returns boolean
+        return SquareRoot((POINT_X - x) * (POINT_X - x) + (POINT_Y - y) * (POINT_Y - y)) <= range
+    endfunction
+
+    // ## 좌표 - 현재 좌표가 지정한 범위 구간 내에 있는지 확인합니다.
+    // ℹ️ 도넛 모양의 범위를 확인할 때 사용할 수 있습니다.
+    // ⚠️ 좌표 정밀하며, 유닛 충돌 범위를 고려하지 않습니다.
+    // ⚠️ 유닛 충돌 범위를 고려해야 할 경우 `IsUnitInRange`, `IsUnitInRangeXY` 함수를 사용하십시오.
+    function IsPointInRangeBetween takes real x, real y, real minRange, real maxRange returns boolean
+        local real dx = POINT_X - x
+        local real dy = POINT_Y - y
+        local real distance = SquareRoot(dx * dx + dy * dy)
+        return distance >= minRange and distance <= maxRange
+    endfunction
+
     // ## 좌표 - 현재 좌표가 지정한 직선 범위 내에 있는지 확인합니다.
     function IsPointInRangeLine takes real originX, real originY, real length, real directionDeg, real range returns boolean
         local real dx = POINT_X - originX
