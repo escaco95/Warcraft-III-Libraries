@@ -11,7 +11,7 @@
 // - **GitHub**: [euclid.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/euclid.j)
 //
 // ## 버전
-// - **Version**: 20240902.0
+// - **Version**: 20240914.0
 //
 // ## Changelog
 // - **2024-09-02**: 좌표 관련 함수 추가 및 수정.
@@ -574,6 +574,59 @@ library Euclid
     // ⚠️ 누군가 들고 있던 아이템일 경우 바닥에 떨어집니다.
     function PointBringItem takes item i returns nothing
         call SetItemPosition(i, POINT_X, POINT_Y)
+    endfunction
+
+    // ## 좌표 - 현재 좌표가 지정한 직선 범위 내에 있는지 확인합니다.
+    function IsPointInRangeLine takes real originX, real originY, real length, real directionDeg, real range returns boolean
+        local real dx = POINT_X - originX
+        local real dy = POINT_Y - originY
+        local real directionRad = bj_DEGTORAD * directionDeg
+        local real endX
+        local real endY
+        local real lineDirX
+        local real lineDirY
+        local real lineLength
+        local real projectionLength
+        local real closestX
+        local real closestY
+        local real distX
+        local real distY
+        local real distance
+    
+        // Calculate the end point of the line
+        set endX = originX + length * Cos(directionRad)
+        set endY = originY + length * Sin(directionRad)
+    
+        // Calculate the direction vector of the line
+        set lineDirX = endX - originX
+        set lineDirY = endY - originY
+        set lineLength = SquareRoot(lineDirX * lineDirX + lineDirY * lineDirY)
+    
+        // Normalize the direction vector
+        set lineDirX = lineDirX / lineLength
+        set lineDirY = lineDirY / lineLength
+    
+        // Calculate the projection length
+        set projectionLength = dx * lineDirX + dy * lineDirY
+    
+        // Clamp the projection length to the line segment
+        if projectionLength < 0 then
+            set projectionLength = 0
+        elseif projectionLength > length then
+            set projectionLength = length
+        endif
+    
+        // Calculate the closest point on the line segment
+        set closestX = originX + projectionLength * lineDirX
+        set closestY = originY + projectionLength * lineDirY
+    
+        // Calculate the distance from the point to the closest point on the line segment
+        set distX = POINT_X - closestX
+        set distY = POINT_Y - closestY
+        set distance = SquareRoot(distX * distX + distY * distY)
+    
+        // Check if the distance is within the given range
+        return distance <= range
     endfunction
 
     globals
