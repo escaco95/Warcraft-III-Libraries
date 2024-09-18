@@ -31,8 +31,10 @@ library EventWrapper initializer onInit
 
         private constant key KEY_ON_UNIT_BUY
         private constant key KEY_ON_UNIT_DEAD
+        private constant key KEY_ON_UNIT_KILL
         private trigger anyUnitSelect = CreateTrigger()
         private constant key KEY_ON_UNIT_SELECT
+        private constant key KEY_ON_UNIT_OWNER_CHANGE
 
         private constant key KEY_ON_HERO_SKILL
 
@@ -99,12 +101,20 @@ library EventWrapper initializer onInit
     endfunction
 
     private function onUnitDead takes nothing returns boolean
+        if GetUnitTypeId(GetKillingUnit()) != 0 then
+            call TriggerEvaluate( LoadTriggerHandle(eventTable,KEY_ON_UNIT_KILL,GetUnitTypeId(GetKillingUnit())) )
+        endif
         call TriggerEvaluate( LoadTriggerHandle(eventTable,KEY_ON_UNIT_DEAD,GetUnitTypeId(GetDyingUnit())) )
         return false
     endfunction
 
     private function onUnitSelect takes nothing returns boolean
         call TriggerEvaluate( LoadTriggerHandle(eventTable,KEY_ON_UNIT_SELECT,GetUnitTypeId(GetTriggerUnit())) )
+        return false
+    endfunction
+
+    private function onUnitOwnerChange takes nothing returns boolean
+        call TriggerEvaluate( LoadTriggerHandle(eventTable,KEY_ON_UNIT_OWNER_CHANGE,GetUnitTypeId(GetTriggerUnit())) )
         return false
     endfunction
 
@@ -125,6 +135,10 @@ library EventWrapper initializer onInit
         set lastCreatedTrigger = CreateTrigger()
         call TriggerAddCondition( lastCreatedTrigger, Condition( function onUnitSelect ) )
         call TriggerRegisterAnyUnitEventBJ( lastCreatedTrigger, EVENT_PLAYER_UNIT_SELECTED )
+
+        set lastCreatedTrigger = CreateTrigger()
+        call TriggerAddCondition( lastCreatedTrigger, Condition( function onUnitOwnerChange ) )
+        call TriggerRegisterAnyUnitEventBJ( lastCreatedTrigger, EVENT_PLAYER_UNIT_CHANGE_OWNER )
 
         set lastCreatedTrigger = CreateTrigger()
         call TriggerAddCondition( lastCreatedTrigger, Condition( function onHeroLearn ) )
@@ -195,6 +209,11 @@ library EventWrapper initializer onInit
         call registerAction(KEY_ON_UNIT_DEAD,unitId,action)
     endfunction
 
+    // ## 이벤트 래퍼 - 유닛 처치 시 발동
+    function WhenUnitKill takes integer unitId, code action returns nothing
+        call registerAction(KEY_ON_UNIT_KILL,unitId,action)
+    endfunction
+
     // ## 이벤트 래퍼 - 어떤 유닛이든 선택 시 발동
     function WhenAnyUnitSelect takes code action returns nothing
         call TriggerAddCondition( anyUnitSelect, Condition( action ) )
@@ -203,6 +222,11 @@ library EventWrapper initializer onInit
     // ## 이벤트 래퍼 - 유닛 선택 시 발동
     function WhenUnitSelected takes integer unitId, code action returns nothing
         call registerAction(KEY_ON_UNIT_SELECT,unitId,action)
+    endfunction
+
+    // ## 이벤트 래퍼 - 유닛 소유자 변경 시 발동
+    function WhenUnitOwnerChanged takes integer unitId, code action returns nothing
+        call registerAction(KEY_ON_UNIT_OWNER_CHANGE,unitId,action)
     endfunction
 
     // ## 이벤트 래퍼 - 영웅 스킬 획득 시 발동
