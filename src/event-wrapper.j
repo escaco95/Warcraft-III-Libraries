@@ -35,6 +35,7 @@ library EventWrapper initializer onInit
         private trigger anyUnitSelect = CreateTrigger()
         private constant key KEY_ON_UNIT_SELECT
         private constant key KEY_ON_UNIT_OWNER_CHANGE
+        private constant key KEY_ON_UNIT_RESEARCH_COMPLETE
 
         private constant key KEY_ON_HERO_SKILL
 
@@ -118,6 +119,11 @@ library EventWrapper initializer onInit
         return false
     endfunction
 
+    private function onUnitResearchComplete takes nothing returns boolean
+        call TriggerEvaluate( LoadTriggerHandle(eventTable,KEY_ON_UNIT_RESEARCH_COMPLETE,GetResearched()) )
+        return false
+    endfunction
+
     private function onHeroLearn takes nothing returns boolean
         call TriggerEvaluate( LoadTriggerHandle(eventTable,KEY_ON_HERO_SKILL,GetLearnedSkill()) )
         return false
@@ -139,6 +145,10 @@ library EventWrapper initializer onInit
         set lastCreatedTrigger = CreateTrigger()
         call TriggerAddCondition( lastCreatedTrigger, Condition( function onUnitOwnerChange ) )
         call TriggerRegisterAnyUnitEventBJ( lastCreatedTrigger, EVENT_PLAYER_UNIT_CHANGE_OWNER )
+
+        set lastCreatedTrigger = CreateTrigger()
+        call TriggerAddCondition( lastCreatedTrigger, Condition( function onUnitResearchComplete ) )
+        call TriggerRegisterAnyUnitEventBJ( lastCreatedTrigger, EVENT_PLAYER_UNIT_RESEARCH_FINISH )
 
         set lastCreatedTrigger = CreateTrigger()
         call TriggerAddCondition( lastCreatedTrigger, Condition( function onHeroLearn ) )
@@ -165,7 +175,6 @@ library EventWrapper initializer onInit
         call initSpellEvents()
     endfunction
     
-
     //===========================================================================
     // API
 
@@ -227,6 +236,11 @@ library EventWrapper initializer onInit
     // ## 이벤트 래퍼 - 유닛 소유자 변경 시 발동
     function WhenUnitOwnerChanged takes integer unitId, code action returns nothing
         call registerAction(KEY_ON_UNIT_OWNER_CHANGE,unitId,action)
+    endfunction
+
+    // ## 이벤트 래퍼 - 유닛 연구 완료 시 발동
+    function WhenUnitResearchFinish takes integer researchId, code action returns nothing
+        call registerAction(KEY_ON_UNIT_RESEARCH_COMPLETE,researchId,action)
     endfunction
 
     // ## 이벤트 래퍼 - 영웅 스킬 획득 시 발동
