@@ -33,32 +33,57 @@ library Periodic
         private trigger lastCreatedTrigger = null
     endglobals
 
-    // ## 주기적 트리거 생성 함수
-    // 주어진 시간 간격(`interval`)마다 주어진 코드(`action`)가 반복적으로 실행되는 트리거를 생성합니다.
+    // ---
+    // ## ⚙️ 트리거 - 주기적 생성
+    // > ### 주어진 [시간 간격](<real interval>)마다 [코드](<code action>)를 반복 실행하는 트리거를 생성합니다
+    // ---
+    // takes
+    // - real interval 실행 간격 (초)
+    // - code action 반복 실행할 코드
+    // returns
+    // - trigger 생성된 트리거
+    // ---
     function CreatePeriodic takes real interval, code action returns trigger
         set lastCreatedTrigger = CreateTrigger()
-        call TriggerAddAction( lastCreatedTrigger, action )
-        call TriggerRegisterTimerEvent( lastCreatedTrigger, interval, true )
+        call TriggerAddAction(lastCreatedTrigger, action)
+        call TriggerRegisterTimerEvent(lastCreatedTrigger, interval, true)
         return lastCreatedTrigger
     endfunction
 
-    // ## 비활성화된 주기적 트리거 생성 함수
-    // 주어진 시간 간격(`interval`)마다 주어진 코드(`action`)가 실행되지만, 비활성화된 상태로 트리거를 생성합니다.
-    // 이후에 수동으로 트리거를 활성화해야 합니다.
+    // ---
+    // ## ⚙️ 트리거 - 비활성화된 주기적 생성
+    // > ### 비활성화된 상태에서 [시간 간격](<real interval>)마다 [코드](<code action>)를 반복 실행하도록 설정된 트리거를 생성합니다
+    // ---
+    // ##### ℹ️ 생성된 트리거는 비활성화된 상태이며, 이후 수동으로 활성화해야 합니다
+    // ---
+    // takes
+    // - real interval 실행 간격 (초)
+    // - code action 반복 실행할 코드
+    // returns
+    // - trigger 생성된 트리거
+    // ---
     function CreatePeriodicDisabled takes real interval, code action returns trigger
         set lastCreatedTrigger = CreateTrigger()
-        call TriggerAddAction( lastCreatedTrigger, action )
-        call TriggerRegisterTimerEvent( lastCreatedTrigger, interval, true )
-        call DisableTrigger( lastCreatedTrigger )
+        call TriggerAddAction(lastCreatedTrigger, action)
+        call TriggerRegisterTimerEvent(lastCreatedTrigger, interval, true)
+        call DisableTrigger(lastCreatedTrigger)
         return lastCreatedTrigger
     endfunction
 
-    // ## 단일 실행 트리거 생성 함수
-    // 주어진 시간(`delay`)이 지난 후 한 번만 주어진 코드(`action`)를 실행하는 트리거를 생성합니다.
+    // ---
+    // ## ⚙️ 트리거 - 단일 실행 생성
+    // > ### [지연 시간](<real delay>) 이후 [코드](<code action>)를 한 번 실행하는 트리거를 생성합니다
+    // ---
+    // takes
+    // - real delay 실행 지연 시간 (초)
+    // - code action 실행할 코드
+    // returns
+    // - trigger 생성된 트리거
+    // ---
     function CreateSingle takes real delay, code action returns trigger
         set lastCreatedTrigger = CreateTrigger()
-        call TriggerAddAction( lastCreatedTrigger, action )
-        call TriggerRegisterTimerEvent( lastCreatedTrigger, delay, false )
+        call TriggerAddAction(lastCreatedTrigger, action)
+        call TriggerRegisterTimerEvent(lastCreatedTrigger, delay, false)
         return lastCreatedTrigger
     endfunction
 
