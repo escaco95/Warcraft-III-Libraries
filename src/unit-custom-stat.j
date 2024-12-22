@@ -1,3 +1,27 @@
+// ---
+// # Unit Custom Stat 라이브러리
+//
+// > 이 라이브러리는 유닛의 커스텀 스탯(예: 공격력, 방어력, 속도 등)을 관리하고 조작하기 위한 기능을 제공합니다.
+// > 이러한 스탯은 기본적인 Warcraft III 유닛 속성을 보완하거나 대체할 수 있습니다.
+//
+// ## 주요 기능:
+// - CustomStatSet: 유닛의 특정 커스텀 스탯 값을 설정합니다.
+// - CustomStatAdd: 유닛의 특정 커스텀 스탯에 값을 추가합니다.
+// - CustomStatGet: 유닛의 특정 커스텀 스탯 값을 반환합니다.
+// - CustomStatReset: 유닛의 특정 커스텀 스탯을 초기화합니다.
+// - CustomStatClear: 유닛의 모든 커스텀 스탯 데이터를 제거합니다.
+//
+// ## 작성자
+// - **Name**: 동동주
+// - **Mail**:  escaco95@naver.com
+// - **GitHub**: [unit-custom-stat.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/unit-custom-stat.j)
+//
+// ## 버전
+// - **Version**: 20241222.0
+//
+// ## Changelog
+// - **2024-12-22**: 라이브러리 전체 주석 추가 및 정리. 초기화 및 데이터 삭제 관련 함수 설명 개선.
+// ---
 library UnitCustomStat initializer onInit
 
     globals
