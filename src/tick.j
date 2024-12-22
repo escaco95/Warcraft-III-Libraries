@@ -67,19 +67,30 @@ library tick initializer onInit
         call index.destroy()
     endfunction
 
-    // ## 틱 인스턴스
     // ---
-    // ℹ️ 인덱스화된 타이머 객체입니다.
-    // ℹ️ 타이머와 달리 1 ~ 8191까지의 핸들값을 가지므로 배열의 인덱스로 활용 가능합니다.
-    // ℹ️ 만약 null check 를 하고 싶다면 `== 0` 비교를 사용할 수 있습니다.
-    // ℹ️ 틱은 의도치 않은 동작의 발생을 방지하기 위해, 파괴 시 딜레이(`DISPOSAL_DELAY`)를 두고 소멸합니다.
-    // ⚠️ 즉, 수천개에 달하는 탄막과 같은 연출 구현에는 적합하지 않습니다. (8191개로 커버 안 됨)
-    // 🚨 이런 식의 접근은 절대 자제해 주세요! `local tick t = 3`
+    // ## 🕒 틱
+    // > ### [MUI](<Multi-unit Instanceability>)([관련 문서](https://www.hiveworkshop.com/threads/mui-triggers-with-waits.218354/)) 목적으로 사용하기 위한 [타이머](<type timer extends agent>) 유틸리티
+    // ---
+    // ##### ℹ️ 틱은 1 ~ [8191](<배열 크기 한계>)까지의 핸들값을 가지므로 배열의 인덱스로 활용 가능합니다
+    // ##### ℹ️ null check를 수행하려면 `== 0`을 사용할 수 있습니다
+    // ##### ℹ️ 파괴 시 [일정 딜레이](<constant real DISPOSAL_DELAY>) 후 소멸하여 의도치 않은 동작을 방지합니다
+    // ##### ⚠️ 수천 개의 탄막과 같은 연출 구현에는 적합하지 않습니다 ([8191](<배열 크기 한계>)개 제한)
+    // ##### 🚨 핸들값을 직접 할당하는 접근 방식은 사용하지 마세요! 예: `local tick t = 3`
+    // ---
     struct tick extends array
     endstruct
 
-    // ## 틱 - 새로운 틱 타이머를 생성합니다.
-    // ℹ️ 커스텀 정수 데이터는 0으로 초기화됩니다.
+    // ---
+    // ## 🕒 틱 - 생성
+    // > ### 새로운 틱 타이머를 생성합니다
+    // ---
+    // ##### ⚠️ 동시에 [8192](<배열 크기 한계>)개 이상의 틱 타이머는 존재할 수 없으며, 이 경우 [0](<=null>)을 반환합니다
+    // ---
+    // takes
+    // - nothing
+    // returns
+    // - tick 생성된 틱 타이머
+    // ---
     function TickCreate takes nothing returns tick
         local tick this = TICKINDEXER.create()
 
@@ -93,7 +104,17 @@ library tick initializer onInit
         return this
     endfunction
 
-    // ## 틱 - 새로운 틱 타이머를 생성합니다. (커스텀 정수 데이터와 함께)
+    // ---
+    // ## 🕒 틱 - 생성 (커스텀 데이터 포함)
+    // > ### 새로운 틱 타이머를 생성합니다 ([커스텀 정수 데이터](<integer dataValue>) 포함) 
+    // ---
+    // ##### ⚠️ 동시에 [8192](<배열 크기 한계>)개 이상의 틱 타이머는 존재할 수 없으며, 이 경우 [0](<=null>)을 반환합니다
+    // ---
+    // takes
+    // - integer dataValue 생성 시 설정할 커스텀 정수 데이터
+    // returns
+    // - tick 생성된 틱 타이머
+    // ---
     function TickCreateEx takes integer dataValue returns tick
         local tick this = TICKINDEXER.create()
 
@@ -107,101 +128,230 @@ library tick initializer onInit
         return this
     endfunction
 
-    // ## 틱 - 틱 타이머의 현재 경과 시간을 가져옵니다.
-    function TickGetElapsed takes tick this returns real
-        return TimerGetElapsed(TIMER[this])
+    // ---
+    // ## 🕒 틱 - 경과 시간 조회
+    // > ### [틱](<tick whichTick>) 객체의 실행 주기 중 경과 시간을 반환합니다
+    // ---
+    // takes
+    // - tick whichTick 경과 시간을 조회할 틱 객체
+    // returns
+    // - real 경과 시간 (초)
+    // ---
+    function TickGetElapsed takes tick whichTick returns real
+        return TimerGetElapsed(TIMER[whichTick])
     endfunction
 
-    // ## 틱 - 틱 타이머의 남은 시간을 가져옵니다.
-    function TickGetRemaining takes tick this returns real
-        return TimerGetRemaining(TIMER[this])
+    // ---
+    // ## 🕒 틱 - 남은 시간 조회
+    // > ### [틱](<tick whichTick>) 객체의 실행 주기 중 남은 시간을 반환합니다
+    // ---
+    // takes
+    // - tick whichTick 남은 시간을 조회할 틱 객체
+    // returns
+    // - real 남은 시간 (초)
+    // ---
+    function TickGetRemaining takes tick whichTick returns real
+        return TimerGetRemaining(TIMER[whichTick])
     endfunction
 
-    // ## 틱 - 틱 타이머의 전체 실행 시간을 가져옵니다.
-    function TickGetTimeout takes tick this returns real
-        return TimerGetTimeout(TIMER[this])
+    // ---
+    // ## 🕒 틱 - 실행 주기 조회
+    // > ### [틱](<tick whichTick>) 객체의 실행 주기를 반환합니다
+    // ---
+    // takes
+    // - tick whichTick 실행 주기를 조회할 틱 객체
+    // returns
+    // - real 실행 주기 (초)
+    // ---
+    function TickGetTimeout takes tick whichTick returns real
+        return TimerGetTimeout(TIMER[whichTick])
     endfunction
 
-    // ## 틱 - 틱 타이머를 일시 정지합니다.
-    function TickPause takes tick this returns nothing
-        if not ENABLE[this] then
+    // ---
+    // ## 🕒 틱 - 일시 정지
+    // > ### 실행 중인 [틱](<tick whichTick>) 객체를 일시 정지합니다
+    // ---
+    // ##### ⚠️ 실행하지 않은 [틱](<tick whichTick>)을 일시 정지할 경우 예상하지 못한 문제가 발생할 수 있습니다
+    // ---
+    // takes
+    // - tick whichTick 일시 정지할 틱 객체
+    // returns
+    // - nothing
+    // ---
+    function TickPause takes tick whichTick returns nothing
+        if not ENABLE[whichTick] then
             return
         endif
 
-        call PauseTimer(TIMER[this])
+        call PauseTimer(TIMER[whichTick])
     endfunction
 
-    // ## 틱 - 틱 타이머를 재개합니다.
-    function TickResume takes tick this returns nothing
-        if not ENABLE[this] then
+    // ---
+    // ## 🕒 틱 - 재개
+    // > ### 일시 정지된 [틱](<tick whichTick>) 객체를 재개합니다
+    // ---
+    // ##### 🚨 일시 정지 상태가 아닌 [틱](<tick whichTick>)을 재개할 경우 페이탈 오류가 발생합니다
+    // ---
+    // takes
+    // - tick whichTick 재개할 틱 객체
+    // returns
+    // - nothing
+    // ---
+    function TickResume takes tick whichTick returns nothing
+        if not ENABLE[whichTick] then
             return
         endif
 
-        call ResumeTimer(TIMER[this])
+        call ResumeTimer(TIMER[whichTick])
     endfunction
 
-    // ## 틱 - 틱 타이머를 실행합니다.
-    function TickStart takes tick this, real timeout, boolean periodic, code callback returns nothing
-        if not ENABLE[this] then
+    // ---
+    // ## 🕒 틱 - 실행
+    // > ### [틱](<tick whichTick>) 객체가 지정한 [시간](<real timeout>) 간격으로 [(반복하여/한 번만)](<boolean periodic>) 특정 [함수](<code callback>)를 실행하도록 설정합니다
+    // ---
+    // ##### ℹ️ [null](<code callback>) 입력 시 아무런 함수도 실행하지 않도록 설정할 수 있습니다
+    // ---
+    // takes
+    // - tick whichTick 실행할 틱 객체
+    // - real timeout 실행될 시간 (초)
+    // - boolean periodic 반복 실행 여부
+    // - code callback 실행할 함수
+    // returns
+    // - nothing
+    // ---
+    function TickStart takes tick whichTick, real timeout, boolean periodic, code callback returns nothing
+        if not ENABLE[whichTick] then
             return
         endif
 
-        call TimerStart(TIMER[this], timeout, periodic, callback)
+        call TimerStart(TIMER[whichTick], timeout, periodic, callback)
     endfunction
 
-    // ## 틱 - 틱 타이머를 반복 실행합니다.
-    function TickPeriodic takes tick this, real timeout, code callback returns nothing
-        if not ENABLE[this] then
+    // ---
+    // ## 🕒 틱 - 반복 실행
+    // > ### [틱](<tick whichTick>) 객체가 일정 [시간](<real timeout>) 간격으로 [함수](<code callback>)를 반복 실행하도록 설정합니다
+    // ---
+    // ##### ℹ️ [null](<code callback>) 입력 시 아무런 함수도 실행하지 않도록 설정할 수 있습니다
+    // ---
+    // takes
+    // - tick whichTick 반복 실행할 틱 객체
+    // - real timeout 실행 간격 (초)
+    // - code callback 실행할 함수
+    // returns
+    // - nothing
+    // ---
+    function TickPeriodic takes tick whichTick, real timeout, code callback returns nothing
+        if not ENABLE[whichTick] then
             return
         endif
 
-        call TimerStart(TIMER[this], timeout, true, callback)
+        call TimerStart(TIMER[whichTick], timeout, true, callback)
     endfunction
 
-    // ## 틱 - 틱 타이머를 한 번 실행합니다.
-    function TickOnce takes tick this, real timeout, code callback returns nothing
-        if not ENABLE[this] then
+    // ---
+    // ## 🕒 틱 - 한 번 실행
+    // > ### [틱](<tick whichTick>) 객체가 일정 [시간](<real timeout>) 후 [함수](<code callback>)를 실행하도록 설정합니다
+    // ---
+    // ##### ℹ️ [null](<code callback>) 입력 시 아무런 함수도 실행하지 않도록 설정할 수 있습니다
+    // ---
+    // takes
+    // - tick whichTick 실행할 틱 객체
+    // - real timeout 실행될 시간 (초)
+    // - code callback 실행될 함수
+    // returns
+    // - nothing
+    // ---
+    function TickOnce takes tick whichTick, real timeout, code callback returns nothing
+        if not ENABLE[whichTick] then
             return
         endif
 
-        call TimerStart(TIMER[this], timeout, false, callback)
+        call TimerStart(TIMER[whichTick], timeout, false, callback)
     endfunction
 
-    // ## 틱 - 틱 타이머를 파괴합니다.
-    function TickDestroy takes tick this returns nothing
-        if not ENABLE[this] then
+    // ---
+    // ## 🕒 틱 - 파괴
+    // > ### [틱](<tick whichTick>) 객체를 파괴합니다.
+    // ---
+    // ##### ℹ️ 파괴된 틱 타이머는 [일정 딜레이](<constant real DISPOSAL_DELAY>) 후 완전히 소멸됩니다
+    // ---
+    // takes
+    // - tick whichTick 파괴할 틱 객체
+    // returns
+    // - nothing
+    // ---
+    function TickDestroy takes tick whichTick returns nothing
+        if not ENABLE[whichTick] then
             return
         endif
 
-        set ENABLE[this] = false
-        call TimerStart(TIMER[this], DISPOSAL_DELAY, false, function dispose)
+        set ENABLE[whichTick] = false
+        call TimerStart(TIMER[whichTick], DISPOSAL_DELAY, false, function dispose)
     endfunction
 
-    // ## 틱 - 커스텀 정수 데이터를 가져옵니다.
-    function TickGetValue takes tick this returns integer
-        return VALUE[this]
+    // ---
+    // ## 🕒 틱 - 커스텀 정수 데이터 조회
+    // > ### [틱](<tick whichTick>) 객체에 저장된 커스텀 정수 데이터를 반환합니다
+    // ---
+    // ##### ℹ️ 반환값은 틱 객체에 설정된 커스텀 정수 데이터입니다. 값이 설정되지 않았다면 기본값 0을 반환합니다
+    // ---
+    // takes
+    // - tick whichTick 조회할 틱 객체
+    // returns
+    // - integer 저장된 커스텀 정수 데이터
+    // ---
+    function TickGetValue takes tick whichTick returns integer
+        return VALUE[whichTick]
     endfunction
 
-    // ## 틱 - 커스텀 정수 데이터를 설정합니다.
-    function TickSetValue takes tick this, integer dataValue returns nothing
-        if not ENABLE[this] then
+    // ---
+    // ## 🕒 틱 - 커스텀 정수 데이터 설정
+    // > ### [틱](<tick whichTick>) 객체에 [커스텀 정수 데이터](<integer dataValue>)를 설정합니다
+    // ---
+    // ##### ℹ️ 활성화되지 않은 틱 객체에 값을 설정하려는 경우, 함수는 아무 작업도 수행하지 않습니다
+    // ---
+    // takes
+    // - tick whichTick 설정할 틱 객체
+    // - integer dataValue 설정할 커스텀 정수 값
+    // returns
+    // - nothing
+    // ---
+    function TickSetValue takes tick whichTick, integer dataValue returns nothing
+        if not ENABLE[whichTick] then
             return
         endif
 
-        set VALUE[this] = dataValue
+        set VALUE[whichTick] = dataValue
     endfunction
 
-    // ## 틱 - 트리거 또는 함수를 작동시킨 틱 타이머를 가져옵니다.
-    // ℹ️ 트리거 또는 함수가 틱에 의해 작동되지 않은 경우, `0 (=null)`을 반환합니다.
+    // ---
+    // ## 🕒 틱 - 트리거 또는 함수를 작동시킨 틱
+    // > ### 트리거 또는 함수를 작동시킨 틱 타이머를 반환합니다
+    // ---
+    // ##### ℹ️ 트리거 또는 함수가 틱에 의해 작동되지 않은 경우 [0](<=null>)을 반환합니다
+    // ---
+    // takes
+    // - nothing
+    // returns
+    // - tick 만료된 틱 객체 또는 [0](<=null>)
+    // ---
     function GetExpiredTick takes nothing returns tick
         return LoadInteger(TABLE, 0, GetHandleId(GetExpiredTimer()))
     endfunction
 
-    // ## 틱 - 틱 타이머를 구성하는 내부 핸들을 가져옵니다.
-    // ℹ️ 이 함수는 주로 틱에 대한 타이머 창을 만들기 위한 목적으로 활용됩니다.
-    // 🚨 이 함수로 취득한 내부 타이머를 임의로 조작하거나 파괴할 경우 틱 시스템 전체가 붕괴할 수 있습니다!
-    function TickGetTimer takes tick this returns timer
-        return TIMER[this]
+    // ---
+    // ## 🕒 틱 - 타이머 핸들 조회
+    // > ### [틱](<tick whichTick>) 의 내부 타이머 핸들을 반환합니다
+    // ---
+    // ##### 🚨 이 함수로 취득한 내부 타이머를 임의로 조작하거나 파괴할 경우 틱 시스템 전체가 붕괴할 수 있습니다!
+    // ---
+    // takes
+    // - tick whichTick 조회할 틱 객체
+    // returns
+    // - timer 내부 타이머 객체
+    // ---
+    function TickGetTimer takes tick whichTick returns timer
+        return TIMER[whichTick]
     endfunction
 
 endlibrary
