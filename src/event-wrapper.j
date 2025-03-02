@@ -10,9 +10,10 @@
 // - **GitHub**: [event-wrapper.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/event-wrapper.j)
 //
 // ## 버전
-// - **Version**: 20241229.0
+// - **Version**: 20250302.0
 //
 // ## Changelog
+// - **2025-03-02**: 타이머 이벤트 추가
 // - **2024-12-29**: 모든 이벤트를 사용하는 것은 부담이 심하므로, 필요한 이벤트만 초기화하도록 수정
 // - **2024-09-03**: 초기 릴리스.
 // ---
@@ -911,6 +912,34 @@ library EventWrapper
     function WhenSpellEffect takes integer abilityTypeId, code action returns nothing
         call prepareSpellEffectEvent( )
         call registerAction( KEY_SPELL_EFFECT, abilityTypeId, action )
+    endfunction
+
+    
+    // '########:'####:'##::::'##:'########:'########::
+    // ... ##..::. ##:: ###::'###: ##.....:: ##.... ##:
+    // ::: ##::::: ##:: ####'####: ##::::::: ##:::: ##:
+    // ::: ##::::: ##:: ## ### ##: ######::: ########::
+    // ::: ##::::: ##:: ##. #: ##: ##...:::: ##.. ##:::
+    // ::: ##::::: ##:: ##:.:: ##: ##::::::: ##::. ##::
+    // ::: ##::::'####: ##:::: ##: ########: ##:::. ##:
+    // :::..:::::....::..:::::..::........::..:::::..::
+
+    function WhenTimer takes real timeout, boolean periodic, code action returns nothing
+        local trigger t = CreateTrigger( )
+        call TriggerAddAction( t, action )
+        call TriggerRegisterTimerEvent( t, timeout, periodic )
+    endfunction
+
+    function WhenTimerSingle takes real timeout, code action returns nothing
+        local trigger t = CreateTrigger( )
+        call TriggerAddAction( t, action )
+        call TriggerRegisterTimerEvent( t, timeout, false )
+    endfunction
+
+    function WhenTimerPeriodic takes real timeout, code action returns nothing
+        local trigger t = CreateTrigger( )
+        call TriggerAddAction( t, action )
+        call TriggerRegisterTimerEvent( t, timeout, true )
     endfunction
 
 endlibrary
