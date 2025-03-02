@@ -1,6 +1,17 @@
 // ---
 // ## 📚 vJass 라이브러리
 // > ### vJass 라이브러리는 Jass 언어의 기능을 확장하고 보완합니다
+//
+// ## 작성자
+// - **Name**: 동동주
+// - **Mail**: escaco95@naver.com
+// - **GitHub**: [vjass.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/vjass.j)
+//
+// ## 버전
+// - **Version**: 20250302.0
+//
+// ## Changelog
+// - **2025-03-02**: debug 조건 제거, 오류 메시지 표시 시간 변경
 // ---
 library vjass
 
@@ -110,7 +121,7 @@ library vjass
     // - nothing
     // ---
     function Print takes string message returns nothing
-        call DisplayTextToPlayer( GetLocalPlayer( ), 0, 0, message )
+        call DisplayTextToPlayer( GetLocalPlayer(), 0, 0, message )
     endfunction
 
     // ---
@@ -134,7 +145,6 @@ library vjass
     // > ### 디버깅용 추적 메시지 [문자열](<string message>)을 출력합니다
     // ---
     // ##### ℹ️ 조건문 분기점, 실행 여부 확인, 변수 값 임시 출력 등에 사용합니다
-    // ##### ⚠️ 이 함수는 디버그 모드에서만 동작합니다
     // ---
     // takes
     // - string message 출력할 추적용 메시지
@@ -142,7 +152,7 @@ library vjass
     // - nothing
     // ---
     function LogTrace takes string message returns nothing
-        debug call DisplayTextToPlayer( GetLocalPlayer( ), 0, 0, "|cFF808080[TRACE] " + message )
+        call DisplayTimedTextToPlayer( GetLocalPlayer(), 0, 0, 3600, "|cFF808080[TRACE] " + message )
     endfunction
 
     // ---
@@ -150,7 +160,6 @@ library vjass
     // > ### 디버깅용 정보 메시지 [문자열](<string message>)을 출력합니다
     // ---
     // ##### ℹ️ 함수 실행 결과, 중요 이벤트 발생, 상태 변경 알림 등에 사용합니다
-    // ##### ⚠️ 이 함수는 디버그 모드에서만 동작합니다
     // ---
     // takes
     // - string message 출력할 정보용 메시지
@@ -158,7 +167,7 @@ library vjass
     // - nothing
     // ---
     function LogInfo takes string message returns nothing
-        debug call DisplayTextToPlayer( GetLocalPlayer( ), 0, 0, "|cFF4040FF[INFO] " + message )
+        call DisplayTimedTextToPlayer( GetLocalPlayer(), 0, 0, 3600, "|cFF4040FF[INFO] " + message )
     endfunction
 
     // ---
@@ -166,7 +175,6 @@ library vjass
     // > ### 디버깅용 경고 메시지 [문자열](<string message>)을 출력합니다
     // ---
     // ##### ℹ️ 잠재적인 오류 발생, 예외 상황 처리, 경고 알림 등에 사용합니다
-    // ##### ⚠️ 이 함수는 디버그 모드에서만 동작합니다
     // ---
     // takes
     // - string message 출력할 경고용 메시지
@@ -174,7 +182,7 @@ library vjass
     // - nothing
     // ---
     function LogWarn takes string message returns nothing
-        debug call DisplayTextToPlayer( GetLocalPlayer( ), 0, 0, "|cFFFFA500[WARN] " + message )
+        call DisplayTimedTextToPlayer( GetLocalPlayer(), 0, 0, 3600, "|cFFFFA500[WARN] " + message )
     endfunction
 
     // ---
@@ -182,7 +190,6 @@ library vjass
     // > ### 디버깅용 오류 메시지 [문자열](<string message>)을 출력합니다
     // ---
     // ##### ℹ️ 예외 처리 실패, 오류 발생, 예상치 못한 상황 알림 등에 사용합니다
-    // ##### ⚠️ 이 함수는 디버그 모드에서만 동작합니다
     // ---
     // takes
     // - string message 출력할 오류용 메시지
@@ -190,7 +197,7 @@ library vjass
     // - nothing
     // ---
     function LogError takes string message returns nothing
-        debug call DisplayTextToPlayer( GetLocalPlayer( ), 0, 0, "|cFFFF0000[ERROR] " + message )
+        call DisplayTimedTextToPlayer( GetLocalPlayer(), 0, 0, 3600, "|cFFFF0000[ERROR] " + message )
     endfunction
 
 endlibrary
