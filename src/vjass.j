@@ -8,9 +8,10 @@
 // - **GitHub**: [vjass.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/vjass.j)
 //
 // ## 버전
-// - **Version**: 20250302.0
+// - **Version**: 20250302.1
 //
 // ## Changelog
+// - **2025-03-02**: common 함수 추가
 // - **2025-03-02**: debug 조건 제거, 오류 메시지 표시 시간 변경
 // ---
 library vjass
@@ -77,6 +78,38 @@ library vjass
     // ---
     function IsUnitDead takes unit whichUnit returns boolean
         return GetUnitTypeId( whichUnit ) == 0 or IsUnitType( whichUnit, UNIT_TYPE_DEAD )
+    endfunction
+
+    // ---
+    // ## 👨🏻‍💼 플레이어 - 플레이 중 여부
+    // > ### [플레이어](<player whichPlayer>)의 플레이 중 여부를 응답합니다
+    // ---
+    // ##### ℹ️ 이 함수는 플레이어가 게임을 플레이 중인지 확인합니다
+    // ##### ℹ️ 이 함수는 CPU 플레이어를 플레이 중으로 간주합니다
+    // ---
+    // takes
+    // - player whichPlayer 플레이 중 여부를 확인할 플레이어
+    // returns
+    // - boolean 플레이 중 여부
+    // ---
+    function IsPlaying takes player whichPlayer returns boolean
+        return GetPlayerSlotState( whichPlayer ) == PLAYER_SLOT_STATE_PLAYING
+    endfunction
+
+    // ---
+    // ## 👨🏻‍💼 플레이어 - 플레이 중인 유저 여부
+    // > ### [플레이어](<player whichPlayer>)가 플레이 중인 유저인지 확인합니다
+    // ---
+    // ##### ℹ️ 이 함수는 플레이어가 게임을 플레이 중인 유저인지 확인합니다
+    // ##### ℹ️ 이 함수는 CPU 플레이어를 유저로 간주하지 않습니다
+    // ---
+    // takes
+    // - player whichPlayer 플레이 중인 유저 여부를 확인할 플레이어
+    // returns
+    // - boolean 플레이 중인 유저 여부
+    // ---
+    function IsPlayingUser takes player whichPlayer returns boolean
+        return GetPlayerSlotState( whichPlayer ) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController( whichPlayer ) == MAP_CONTROL_USER
     endfunction
 
     // ---
