@@ -10,9 +10,10 @@
 // - **GitHub**: [event-wrapper.j](https://github.com/escaco95/Warcraft-III-Libraries/blob/release/src/event-wrapper.j)
 //
 // ## 버전
-// - **Version**: 20250302.0
+// - **Version**: 20250327.0
 //
 // ## Changelog
+// - **2025-03-27**: WhenTimer 계열 함수 잠재적 누수 처리
 // - **2025-03-02**: 타이머 이벤트 추가
 // - **2024-12-29**: 모든 이벤트를 사용하는 것은 부담이 심하므로, 필요한 이벤트만 초기화하도록 수정
 // - **2024-09-03**: 초기 릴리스.
@@ -925,21 +926,21 @@ library EventWrapper
     // :::..:::::....::..:::::..::........::..:::::..::
 
     function WhenTimer takes real timeout, boolean periodic, code action returns nothing
-        local trigger t = CreateTrigger( )
-        call TriggerAddAction( t, action )
-        call TriggerRegisterTimerEvent( t, timeout, periodic )
+        set lastCreatedTrigger = CreateTrigger( )
+        call TriggerAddAction( lastCreatedTrigger, action )
+        call TriggerRegisterTimerEvent( lastCreatedTrigger, timeout, periodic )
     endfunction
 
     function WhenTimerSingle takes real timeout, code action returns nothing
-        local trigger t = CreateTrigger( )
-        call TriggerAddAction( t, action )
-        call TriggerRegisterTimerEvent( t, timeout, false )
+        set lastCreatedTrigger = CreateTrigger( )
+        call TriggerAddAction( lastCreatedTrigger, action )
+        call TriggerRegisterTimerEvent( lastCreatedTrigger, timeout, false )
     endfunction
 
     function WhenTimerPeriodic takes real timeout, code action returns nothing
-        local trigger t = CreateTrigger( )
-        call TriggerAddAction( t, action )
-        call TriggerRegisterTimerEvent( t, timeout, true )
+        set lastCreatedTrigger = CreateTrigger( )
+        call TriggerAddAction( lastCreatedTrigger, action )
+        call TriggerRegisterTimerEvent( lastCreatedTrigger, timeout, true )
     endfunction
 
 endlibrary
